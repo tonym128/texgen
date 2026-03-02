@@ -57,15 +57,31 @@
         ⚠️ Browser Security Error: ES Modules cannot be loaded via 'file://'. <br>
         Please run this gallery using a local server (e.g., 'npx http-server' or 'npm start').
       </div>
+      <div id="fallback-banner" style="display: none; background: rgba(34, 211, 238, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 10px 15px; border-radius: 8px; margin-top: 20px; font-size: 0.85rem;">
+        ℹ️ <strong>Fallback Mode</strong>: Running pre-compiled JavaScript. (TypeScript source is only available when running via a Vite development server).
+      </div>
     </header>
     <div id="app" class="grid"></div>
 
-    <script>
-      if (window.location.protocol === 'file:') {
-        document.getElementById('protocol-warning').style.display = 'block';
-      }
+    <script type="module">
+      const loadScript = async () => {
+        if (window.location.protocol === 'file:') {
+          document.getElementById('protocol-warning').style.display = 'block';
+          return;
+        }
+
+        try {
+          // Attempt to load the TypeScript source (works on Vite/dev servers)
+          await import('./src/main.ts');
+        } catch (e) {
+          // Fallback to the compiled JavaScript (works on GitHub Pages/static servers)
+          console.log("TS module not found or environment doesn't support .ts, falling back to main.js");
+          document.getElementById('fallback-banner').style.display = 'block';
+          import('./src/main.js');
+        }
+      };
+      loadScript();
     </script>
-    <script type="module" src="./src/main.js"></script>
     <div id="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 40px;">
       <div style="background: var(--card); border: 1px solid #334155; border-radius: 16px; width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         <div style="padding: 30px; border-right: 1px solid #334155; display: flex; flex-direction: column;">
