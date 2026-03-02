@@ -30,9 +30,11 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            background: radial-gradient(circle, #1a1a24 0%, #0f0f12 100%);
             position: relative;
             padding: 40px;
+            border-bottom: 4px solid #000;
+            background: #1a1a24;
+            z-index: 1;
         }
 
         .actor {
@@ -40,10 +42,10 @@
             width: 250px;
             position: relative;
             transition: transform 0.3s;
+            z-index: 10;
         }
 
-        .actor.attacking { transform: translateX(50px); }
-        .actor.hit { transform: translateX(-20px); animation: shake 0.3s; }
+        .actor.hit { animation: shake 0.3s; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -62,17 +64,13 @@
         }
 
         .stat-bar {
-            width: 100%;
-            height: 20px;
-            background: #333;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid #000;
-            margin-bottom: 5px;
+            width: 100%; height: 20px; background: #333;
+            border-radius: 10px; overflow: hidden;
+            border: 2px solid #000; margin-bottom: 5px;
         }
 
         .hp-fill { height: 100%; background: var(--hp); transition: width 0.3s; width: 100%; }
-        .block-display { color: var(--block); font-weight: bold; min-height: 1.2em; }
+        .block-display { color: var(--block); font-weight: bold; min-height: 1.2em; text-shadow: 0 2px 4px #000; }
 
         #hand {
             height: 300px;
@@ -81,20 +79,19 @@
             align-items: flex-end;
             padding-bottom: 40px;
             perspective: 1000px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+            position: relative;
+            background: #051a05;
+            z-index: 2;
         }
 
         .card {
-            width: var(--card-w);
-            height: var(--card-h);
-            background: #16161e;
-            border-radius: 12px;
-            position: relative;
-            cursor: pointer;
+            width: var(--card-w); height: var(--card-h);
+            background: #16161e; border-radius: 12px;
+            position: relative; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            user-select: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            margin: 0 -25px; /* Heavy overlap */
+            user-select: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            margin: 0 -25px;
+            z-index: 20;
         }
 
         .card:hover {
@@ -103,130 +100,40 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255, 204, 0, 0.2);
         }
 
-        .card-frame {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 12px;
-            pointer-events: none;
-        }
+        .card-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; }
+        .card-art { position: absolute; top: 25px; left: 15px; width: calc(100% - 30px); height: 110px; background: #000; border-radius: 4px; border: 2px solid rgba(255,255,255,0.1); }
+        .card-info { position: absolute; top: 145px; left: 15px; width: calc(100% - 30px); text-align: center; }
+        .card-name { font-weight: bold; font-size: 1rem; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .card-desc { font-size: 0.75rem; color: #aaa; line-height: 1.2; }
+        .card-cost { position: absolute; top: -10px; left: -10px; width: 32px; height: 32px; background: #222; color: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid var(--accent); z-index: 30; }
 
-        .card-art {
-            position: absolute;
-            top: 25px; left: 15px;
-            width: calc(100% - 30px);
-            height: 110px;
-            background: #000;
-            border-radius: 4px;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-
-        .card-info {
-            position: absolute;
-            top: 145px; left: 15px; /* MOVED HIGHER */
-            width: calc(100% - 30px);
-            text-align: center;
-        }
-
-        .card-name {
-            font-weight: bold;
-            font-size: 1rem;
-            color: var(--accent);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .card-desc {
-            font-size: 0.75rem;
-            color: #aaa;
-            line-height: 1.2;
-        }
-
-        .card-cost {
-            position: absolute;
-            top: -10px; left: -10px;
-            width: 32px; height: 32px;
-            background: #222;
-            color: var(--accent);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            border: 2px solid var(--accent);
-            z-index: 10;
-        }
-
-        #ui-layer {
-            position: absolute;
-            top: 20px; left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            background: #24283b;
-            border: 1px solid #444;
-            color: #fff;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
+        #ui-layer { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .btn { padding: 10px 20px; background: #24283b; border: 1px solid #444; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s; }
         .btn:hover:not(:disabled) { background: var(--accent); color: #000; }
         .btn:disabled { opacity: 0.5; cursor: default; }
 
-        #log {
-            position: absolute;
-            bottom: 340px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            font-size: 0.9rem;
-            color: #888;
-            text-align: center;
-            pointer-events: none;
-        }
+        #log { position: absolute; bottom: 340px; left: 50%; transform: translateX(-50%); width: 400px; font-size: 0.9rem; color: #eee; text-align: center; pointer-events: none; text-shadow: 0 2px 4px #000; z-index: 50; }
+        .floating-text { position: absolute; font-weight: bold; font-size: 2rem; pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 2000; }
+        .dmg-text { color: #f44; } .block-text { color: #4af; }
 
-        .floating-text {
-            position: absolute;
-            font-weight: bold;
-            font-size: 2rem;
-            pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
-            z-index: 2000;
-        }
-
-        .dmg-text { color: #f44; }
-        .block-text { color: #4af; }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
-        }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
     </style>
 </head>
 <body>
 
     <div id="battle-arena">
+        <canvas id="arena-bg" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1;"></canvas>
         <div id="ui-layer">
             <button class="btn" id="new-hand-btn" onclick="game.drawHand()">End Turn</button>
             <div style="font-size: 0.9rem; color: #888;">Procedural Combat</div>
         </div>
 
-        <!-- VICTORY OVERLAY -->
         <div id="victory-screen" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px);">
             <h1 style="color: var(--accent); font-size: 5rem; text-shadow: 0 0 30px var(--accent); margin: 0;">VICTORY</h1>
             <p style="color: #fff; font-size: 1.2rem; margin-bottom: 30px;">The alien hero has triumphed!</p>
             <button class="btn" style="font-size: 1.5rem; padding: 15px 40px;" onclick="location.reload()">New Journey</button>
         </div>
 
-        <!-- PLAYER -->
         <div id="player-actor" class="actor">
             <canvas id="player-canvas" class="portrait"></canvas>
             <h3>Hero</h3>
@@ -235,7 +142,6 @@
             <div id="player-hp-text">100 / 100</div>
         </div>
 
-        <!-- ENEMY -->
         <div id="enemy-actor" class="actor">
             <canvas id="enemy-canvas" class="portrait"></canvas>
             <h3 id="enemy-name">???</h3>
@@ -247,7 +153,9 @@
         <div id="log">Your Turn</div>
     </div>
 
-    <div id="hand"></div>
+    <div id="hand">
+        <canvas id="hand-bg" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1;"></canvas>
+    </div>
 
     <script src="texgen.js"></script>
     <script src="game.js"></script>
