@@ -182,9 +182,31 @@ class Solitaire {
     }
 
     setupInput() {
+        // Desktop
         document.addEventListener('mousedown', e => this.onDown(e));
         document.addEventListener('mousemove', e => this.onMove(e));
         document.addEventListener('mouseup', e => this.onUp(e));
+
+        // Mobile
+        document.addEventListener('touchstart', e => {
+            const touch = e.touches[0];
+            // Create a fake mouse event for shared logic
+            const fakeEvent = { button: 0, clientX: touch.clientX, clientY: touch.clientY, target: touch.target };
+            this.onDown(fakeEvent);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', e => {
+            if (!this.dragData) return;
+            e.preventDefault(); // Prevent scrolling while dragging
+            const touch = e.touches[0];
+            const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+            this.onMove(fakeEvent);
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            if (!this.dragData) return;
+            this.onUp();
+        });
     }
 
     onDown(e) {

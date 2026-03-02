@@ -140,7 +140,10 @@ class CardRoguelike {
         const frameUrl = tg.bake(CARD_SHADERS.frame, { width: 180, height: 260, uniforms: { u_type: frameType } });
         const artUrl = tg.bake(CARD_SHADERS[data.type] || CARD_SHADERS.void, { width: 150, height: 110, time: Math.random() * 1000 });
         card.innerHTML = `<div class="card-cost">${data.cost}</div><img src="${frameUrl}" class="card-frame"><img src="${artUrl}" class="card-art"><div class="card-info"><div class="card-name">${data.name}</div><div class="card-desc">${data.effect === 'dmg' ? 'Attack' : 'Block'} ${data.val}</div></div>`;
-        if (!isEnemy) card.onclick = () => this.playCard(card, data);
+        if (!isEnemy) {
+            card.onclick = () => this.playCard(card, data);
+            card.ontouchstart = (e) => { e.preventDefault(); this.playCard(card, data); };
+        }
         return card;
     }
 

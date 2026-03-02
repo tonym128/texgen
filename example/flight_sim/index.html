@@ -2,42 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TexGen - Flight Sim</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TexGen - Endless Flight Sim</title>
     <style>
-        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; }
-        #webgl-canvas { display: block; width: 100vw; height: 100vh; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
         
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; font-weight: bold; color: #ffcc00; z-index: 100; text-shadow: 0 0 10px #ffcc00; animation: pulse 1s infinite alternate; text-align: center; }
-        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
-        
-        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
-        .instructions { position: absolute; bottom: 20px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
-        
-        #tod-slider { position: absolute; top: 20px; right: 20px; width: 200px; z-index: 10; }
-        .tod-label { position: absolute; top: 50px; right: 20px; font-size: 14px; text-shadow: 1px 1px 0 #000; z-index: 10; }
+        #loading {
+            position: fixed; inset: 0; background: #050508;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: #00ffcc; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .instructions {
+            position: absolute; top: 20px; left: 20px; padding: 15px;
+            background: rgba(0,0,0,0.6); border-radius: 8px; font-size: 0.8rem; pointer-events: none;
+        }
+
+        #tod-container { position: absolute; top: 20px; right: 20px; text-align: right; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; }
+        input[type=range] { width: 120px; cursor: pointer; }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute; bottom: 30px; left: 0; width: 100%;
+            display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box;
+            user-select: none; z-index: 2000;
+        }
+        .control-group { display: flex; gap: 15px; }
+        .btn-circle {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; font-weight: bold; color: #fff;
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+        }
+        .btn-circle:active { background: rgba(0, 255, 204, 0.4); border-color: #00ffcc; transform: scale(0.9); }
+
+        @media (max-width: 768px) {
+            #mobile-controls { display: flex; }
+            .instructions { display: none; }
+        }
     </style>
-    <!-- Include Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+
     <div id="loading">
-        Decompressing Procedural Textures...<br>
-        <span style="font-size: 16px; color: #aaa; font-weight: normal;" id="compression-status"></span>
+        <div class="spinner"></div>
+        <p id="compression-status">Initializing GPU...</p>
     </div>
-    
-    <div class="hud">ENDLESS FLIGHT</div>
+
     <div class="instructions">
         <strong>WASD / Arrows:</strong> Steer Plane<br>
         <strong>Textures:</strong> Realtime Sky & Seamless Baked Terrain
     </div>
     
-    <input type="range" id="tod-slider" min="0" max="1" step="0.001" value="0.5">
-    <div class="tod-label">Time of Day</div>
+    <div id="tod-container">
+        <input type="range" id="tod-slider" min="0" max="1" step="0.001" value="0.5">
+        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px;">Time of Day</div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="control-group">
+            <div class="btn-circle" id="btn-left">←</div>
+            <div class="btn-circle" id="btn-right">→</div>
+        </div>
+        <div class="control-group">
+            <div class="btn-circle" id="btn-up">↑</div>
+            <div class="btn-circle" id="btn-down">↓</div>
+        </div>
+    </div>
 
     <canvas id="webgl-canvas"></canvas>
 
-    <!-- Include TexGen library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="texgen.js"></script>
     <script src="game.js"></script>
 </body>

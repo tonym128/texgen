@@ -60,11 +60,12 @@ class FlightSim {
             status.innerText = "Initializing Realtime Sky...";
             this.skyTg = new TexGen({ width: 512, height: 512 });
             this.skyTg.init(skySrc);
-            this.skyTg.render(0, { u_tod: 0.5, u_sunY: 1 }); // Start at Midday
+            this.skyTg.render(0, { u_tod: 0.5, u_sunY: 1 });
 
             document.getElementById('loading').style.display = 'none';
             this.initThreeJS(albedoImg, heightImg);
             this.setupInput();
+            this.setupTouchControls();
             requestAnimationFrame((t) => this.loop(t));
         } catch (e) {
             console.error(e);
@@ -76,8 +77,9 @@ class FlightSim {
         const canvas = document.getElementById('webgl-canvas');
         this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.scene = new THREE.Scene();
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
+        this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 4000);
         
         window.addEventListener('resize', () => {
@@ -163,6 +165,19 @@ class FlightSim {
         this.todSlider = document.getElementById('tod-slider');
     }
 
+    setupTouchControls() {
+        const bindBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); this.input[key] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); this.input[key] = false; });
+        };
+        bindBtn('btn-up', 'up');
+        bindBtn('btn-down', 'down');
+        bindBtn('btn-left', 'left');
+        bindBtn('btn-right', 'right');
+    }
+
     setupInput() {
         window.addEventListener('keydown', e => this.handleKey(e.code, true));
         window.addEventListener('keyup', e => this.handleKey(e.code, false));
@@ -222,10 +237,6 @@ class FlightSim {
         todSliderVal = (todSliderVal + (1.0 / 180.0) * dt) % 1.0;
         this.todSlider.value = todSliderVal;
 
-        // Correct Mapping: 
-        // Slider 0.0 -> Midnight (sunY = -1, u_tod = 0.0)
-        // Slider 0.5 -> Midday (sunY = 1, u_tod = 0.5)
-        // Slider 1.0 -> Midnight (sunY = -1, u_tod = 1.0)
         const sunY = Math.sin(todSliderVal * Math.PI * 2 - Math.PI/2);
         const sunX = Math.cos(todSliderVal * Math.PI * 2 - Math.PI/2);
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TexGen - Procedural Card Roguelike</title>
     <style>
         :root {
@@ -15,108 +15,74 @@
         }
 
         body {
-            margin: 0;
-            background-color: var(--bg);
-            color: #eee;
+            margin: 0; background-color: var(--bg); color: #eee;
             font-family: 'Segoe UI', system-ui, sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            overflow: hidden; display: flex; flex-direction: column; height: 100vh;
+            touch-action: none;
         }
 
         #battle-arena {
-            flex-grow: 1;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            position: relative;
-            padding: 40px;
-            border-bottom: 4px solid #000;
-            background: #1a1a24;
-            z-index: 1;
+            flex-grow: 1; display: flex; justify-content: space-around; align-items: center;
+            position: relative; padding: 20px; border-bottom: 4px solid #000;
+            background: #1a1a24; z-index: 1; overflow: hidden;
         }
 
-        .actor {
-            text-align: center;
-            width: 250px;
-            position: relative;
-            transition: transform 0.3s;
-            z-index: 10;
-        }
-
+        .actor { text-align: center; width: 40%; max-width: 250px; position: relative; transition: transform 0.3s; z-index: 10; }
         .actor.hit { animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .portrait {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 4px solid #444;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            background: #000;
-            margin: 0 auto 15px;
-        }
-
-        .stat-bar {
-            width: 100%; height: 20px; background: #333;
-            border-radius: 10px; overflow: hidden;
-            border: 2px solid #000; margin-bottom: 5px;
-        }
-
+        .portrait { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 4px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.8); background: #000; margin: 0 auto 10px; }
+        .stat-bar { width: 100%; height: 15px; background: #333; border-radius: 10px; overflow: hidden; border: 2px solid #000; margin-bottom: 5px; }
         .hp-fill { height: 100%; background: var(--hp); transition: width 0.3s; width: 100%; }
-        .block-display { color: var(--block); font-weight: bold; min-height: 1.2em; text-shadow: 0 2px 4px #000; }
+        .block-display { color: var(--block); font-weight: bold; min-height: 1.2em; text-shadow: 0 2px 4px #000; font-size: 0.9rem; }
 
         #hand {
-            height: 300px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            padding-bottom: 40px;
-            perspective: 1000px;
-            position: relative;
-            background: #051a05;
-            z-index: 2;
+            height: 220px; display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 20px; perspective: 1000px; position: relative;
+            background: #051a05; z-index: 2;
         }
 
         .card {
-            width: var(--card-w); height: var(--card-h);
-            background: #16161e; border-radius: 12px;
+            width: 120px; height: 174px; /* Scaled down for mobile */
+            background: #16161e; border-radius: 8px;
             position: relative; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
             user-select: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            margin: 0 -25px;
-            z-index: 20;
+            margin: 0 -20px; z-index: 20;
         }
 
-        .card:hover {
-            transform: translateY(-60px) scale(1.1) rotate(0deg) !important;
+        .card:hover, .card:active {
+            transform: translateY(-40px) scale(1.1) rotate(0deg) !important;
             z-index: 100 !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255, 204, 0, 0.2);
         }
 
-        .card-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; }
-        .card-art { position: absolute; top: 25px; left: 15px; width: calc(100% - 30px); height: 110px; background: #000; border-radius: 4px; border: 2px solid rgba(255,255,255,0.1); }
-        .card-info { position: absolute; top: 145px; left: 15px; width: calc(100% - 30px); text-align: center; }
-        .card-name { font-weight: bold; font-size: 1rem; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        .card-desc { font-size: 0.75rem; color: #aaa; line-height: 1.2; }
-        .card-cost { position: absolute; top: -10px; left: -10px; width: 32px; height: 32px; background: #222; color: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid var(--accent); z-index: 30; }
+        .card-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; pointer-events: none; }
+        .card-art { position: absolute; top: 15px; left: 10px; width: calc(100% - 20px); height: 70px; background: #000; border-radius: 4px; }
+        .card-info { position: absolute; top: 95px; left: 5px; width: calc(100% - 10px); text-align: center; }
+        .card-name { font-weight: bold; font-size: 0.8rem; color: var(--accent); margin-bottom: 2px; text-transform: uppercase; }
+        .card-desc { font-size: 0.65rem; color: #aaa; line-height: 1.1; }
+        .card-cost { position: absolute; top: -8px; left: -8px; width: 24px; height: 24px; background: #222; color: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.8rem; border: 2px solid var(--accent); z-index: 30; }
 
-        #ui-layer { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
-        .btn { padding: 10px 20px; background: #24283b; border: 1px solid #444; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        #ui-layer { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+        .btn { padding: 8px 16px; background: #24283b; border: 1px solid #444; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
         .btn:hover:not(:disabled) { background: var(--accent); color: #000; }
-        .btn:disabled { opacity: 0.5; cursor: default; }
 
-        #log { position: absolute; bottom: 340px; left: 50%; transform: translateX(-50%); width: 400px; font-size: 0.9rem; color: #eee; text-align: center; pointer-events: none; text-shadow: 0 2px 4px #000; z-index: 50; }
-        .floating-text { position: absolute; font-weight: bold; font-size: 2rem; pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 2000; }
+        #log { position: absolute; bottom: 240px; left: 50%; transform: translateX(-50%); width: 90%; font-size: 0.8rem; color: #eee; text-align: center; pointer-events: none; text-shadow: 0 2px 4px #000; z-index: 50; }
+        .floating-text { position: absolute; font-weight: bold; font-size: 1.5rem; pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 2000; }
         .dmg-text { color: #f44; } .block-text { color: #4af; }
 
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+
+        @media (min-width: 769px) {
+            .card { width: 180px; height: 260px; margin: 0 -25px; }
+            .card-art { top: 25px; left: 15px; width: calc(100% - 30px); height: 110px; }
+            .card-info { top: 145px; left: 15px; width: calc(100% - 30px); }
+            .card-name { font-size: 1rem; }
+            .card-desc { font-size: 0.75rem; }
+            .card-cost { width: 32px; height: 32px; font-size: 1rem; }
+            #hand { height: 300px; }
+            #log { bottom: 340px; }
+        }
     </style>
 </head>
 <body>
@@ -125,29 +91,28 @@
         <canvas id="arena-bg" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1;"></canvas>
         <div id="ui-layer">
             <button class="btn" id="new-hand-btn" onclick="game.drawHand()">End Turn</button>
-            <div style="font-size: 0.9rem; color: #888;">Procedural Combat</div>
         </div>
 
-        <div id="victory-screen" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px);">
-            <h1 style="color: var(--accent); font-size: 5rem; text-shadow: 0 0 30px var(--accent); margin: 0;">VICTORY</h1>
-            <p style="color: #fff; font-size: 1.2rem; margin-bottom: 30px;">The alien hero has triumphed!</p>
-            <button class="btn" style="font-size: 1.5rem; padding: 15px 40px;" onclick="location.reload()">New Journey</button>
+        <div id="victory-screen" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px); padding: 20px; text-align: center;">
+            <h1 style="color: var(--accent); font-size: 3rem; text-shadow: 0 0 30px var(--accent); margin: 0;">VICTORY</h1>
+            <p style="color: #fff; font-size: 1rem; margin-bottom: 20px;">The alien hero has triumphed!</p>
+            <button class="btn" style="font-size: 1.2rem; padding: 12px 30px;" onclick="location.reload()">New Journey</button>
         </div>
 
         <div id="player-actor" class="actor">
             <canvas id="player-canvas" class="portrait"></canvas>
-            <h3>Hero</h3>
+            <h3 style="margin: 0; font-size: 1rem;">Hero</h3>
             <div class="block-display" id="player-block"></div>
             <div class="stat-bar"><div id="player-hp-fill" class="hp-fill"></div></div>
-            <div id="player-hp-text">100 / 100</div>
+            <div id="player-hp-text" style="font-size: 0.8rem;">100 / 100</div>
         </div>
 
         <div id="enemy-actor" class="actor">
             <canvas id="enemy-canvas" class="portrait"></canvas>
-            <h3 id="enemy-name">???</h3>
+            <h3 id="enemy-name" style="margin: 0; font-size: 1rem;">???</h3>
             <div class="block-display" id="enemy-block"></div>
             <div class="stat-bar"><div id="enemy-hp-fill" class="hp-fill"></div></div>
-            <div id="enemy-hp-text">100 / 100</div>
+            <div id="enemy-hp-text" style="font-size: 0.8rem;">100 / 100</div>
         </div>
 
         <div id="log">Your Turn</div>
