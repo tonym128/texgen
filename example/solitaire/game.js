@@ -46,8 +46,6 @@ class Solitaire {
             t0: [], t1: [], t2: [], t3: [], t4: [], t5: [], t6: []
         };
         this.textures = { back: '', paper: '' };
-        this.cw = 80; this.ch = 112;
-        this.margin = 20; this.gapX = 90;
         this.dragData = null;
         this.lastClickTime = 0;
         this.lastClickCard = null;
@@ -55,17 +53,52 @@ class Solitaire {
     }
 
     async init() {
+        this.resize();
+        window.addEventListener('resize', () => { this.resize(); this.renderAll(); });
+
         const tg = new TexGen();
         const bgCanvas = document.getElementById('bg-canvas');
         if (bgCanvas) {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
             const bgTg = new TexGen({ canvas: bgCanvas });
             bgTg.init(SHADERS.felt); bgTg.render();
         }
         this.textures.back = tg.bake(SHADERS.back, { width: 160, height: 224 });
         this.textures.paper = tg.bake(SHADERS.paper, { width: 160, height: 224 });
-        this.drawSlots();
+        
         this.setupInput();
         this.startNewGame();
+    }
+
+    resize() {
+        const w = window.innerWidth;
+        const availableW = w - 40;
+        this.cw = Math.min(120, Math.floor(availableW / 8));
+        this.ch = Math.floor(this.cw * 1.4);
+        this.gapX = Math.floor(availableW / 7);
+        this.margin = Math.floor((w - (this.gapX * 6 + this.cw)) / 2);
+
+        const style = document.getElementById('dynamic-card-css') || document.createElement('style');
+        style.id = 'dynamic-card-css';
+        style.innerHTML = `
+            .card, .pile-slot { width: ${this.cw}px; height: ${this.ch}px; }
+            .card-inner { border-radius: ${this.cw * 0.08}px; }
+            .val { font-size: ${this.cw * 0.22}px; }
+            .suit { font-size: ${this.cw * 0.2}px; }
+            .center-suit { font-size: ${this.cw * 0.4}px; }
+        `;
+        if (!style.parentElement) document.head.appendChild(style);
+
+        const bgCanvas = document.getElementById('bg-canvas');
+        if (bgCanvas) {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            const bgTg = new TexGen({ canvas: bgCanvas });
+            bgTg.init(SHADERS.felt); bgTg.render();
+        }
+
+        this.drawSlots();
     }
 
     drawSlots() {
@@ -77,19 +110,19 @@ class Solitaire {
             el.className = 'pile-slot'; el.id = id; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.pointerEvents = 'auto';
             if (icon) {
                 el.style.display = 'flex'; el.style.justifyContent = 'center'; el.style.alignItems = 'center';
-                el.style.fontSize = '32px'; el.style.color = 'rgba(255,255,255,0.1)'; el.innerHTML = icon;
+                el.style.fontSize = `${this.cw * 0.4}px`; el.style.color = 'rgba(255,255,255,0.1)'; el.innerHTML = icon;
             }
             c.appendChild(el); return { x, y };
         };
         this.slotPos = {
-            stock: addSlot('stock', this.margin, this.margin, '↺'),
-            waste: addSlot('waste', this.margin + this.gapX, this.margin),
-            f0: addSlot('f0', this.margin + this.gapX * 3, this.margin, '♠'),
-            f1: addSlot('f1', this.margin + this.gapX * 4, this.margin, '♥'),
-            f2: addSlot('f2', this.margin + this.gapX * 5, this.margin, '♣'),
-            f3: addSlot('f3', this.margin + this.gapX * 6, this.margin, '♦')
+            stock: addSlot('stock', this.margin, 20, '↺'),
+            waste: addSlot('waste', this.margin + this.gapX, 20),
+            f0: addSlot('f0', this.margin + this.gapX * 3, 20, '♠'),
+            f1: addSlot('f1', this.margin + this.gapX * 4, 20, '♥'),
+            f2: addSlot('f2', this.margin + this.gapX * 5, 20, '♣'),
+            f3: addSlot('f3', this.margin + this.gapX * 6, 20, '♦')
         };
-        for (let i = 0; i < 7; i++) this.slotPos['t' + i] = addSlot('t' + i, this.margin + i * this.gapX, this.margin + this.ch + 30);
+        for (let i = 0; i < 7; i++) this.slotPos['t' + i] = addSlot('t' + i, this.margin + i * this.gapX, this.ch + 50);
     }
 
     startNewGame() {
@@ -132,7 +165,7 @@ class Solitaire {
             const pile = this.piles['t' + col]; let curY = this.slotPos['t' + col].y;
             pile.forEach((c, idx) => {
                 c.el.style.transform = `translate(${this.slotPos['t' + col].x}px, ${curY}px)`; c.el.style.zIndex = z++; this.updateCardVisual(c);
-                curY += c.faceUp ? 25 : 12;
+                curY += c.faceUp ? Math.floor(this.ch * 0.22) : Math.floor(this.ch * 0.1);
             });
         }
     }
@@ -257,8 +290,5 @@ class Solitaire {
     }
 }
 
-// Global exposure for testing and instantiation
 window.Solitaire = Solitaire;
-window.onload = () => {
-    window.game = new Solitaire();
-};
+window.onload = () => { window.game = new Solitaire(); };
