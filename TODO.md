@@ -16,18 +16,37 @@ This list tracks the planned enhancements for the **TexGen** library, documentat
 
 ## ✅ Phase 3: Ecosystem & Portability (Completed)
 - [x] **TexGen CLI**: A Node.js tool for command-line compression and batch-baking textures to disk.
-- [x] **Modern Build Pipeline**: Use Rollup/Esbuild to generate `texgen.esm.js` and a minified `texgen.min.js` (Implemented native ESM support & Vite config).
+- [x] **Modern Build Pipeline**: Use Rollup/Esbuild to generate `texgen.esm.js` and a minified `texgen.min.js`.
 - [x] **Framework Wrappers**: Create lightweight components for **React**, **Vue**, and **Svelte**.
 - [x] **Headless testing**: Expand the test suite to run in a pure Node.js environment using `headless-gl`.
+
+## ✅ Phase 4: Mobile & Adaptive Polish (Completed)
+- [x] **Mobile Controls**: Added touch-friendly on-screen controls to Marble Roller, 3D Maze, and Platformer.
+- [x] **Adaptive Display**: Updated all 3D and physics-based examples to handle dynamic window resizing and high-DPI (Retina) screens.
+- [x] **Dynamic Level Generation**: Updated level logic in Marble Roller and Platformer to scale based on available screen area.
+- [x] **Robust Error Handling**: Fixed critical shader decompression issues in Flight Sim and restored feature parity in Platformer.
+
+## 🚀 Phase 5: Advanced Features (Planned)
+- [ ] **Custom Token Maps**: Allow users to define their own compression tokens for project-specific GLSL patterns.
+- [ ] **Asynchronous Baking**: Implement a `bakeAsync()` method that automatically utilizes Web Workers if available.
+- [ ] **Sprite Sheet Generator**: Add CLI support for packing multiple procedural textures into a single optimized sprite sheet.
+- [ ] **GLSL Minifier**: Integrate a specialized GLSL minifier into the CLI to further reduce shader payload size before tokenization.
+- [ ] **Unity/Unreal Bridge**: Create scripts to export TexGen baked textures or compression logic directly into major game engines.
+
+## 🎨 Future Content Ideas
+- [ ] **Procedural Sprite Editor**: A specialized UI for generating small 16x16 or 32x32 characters and items.
+- [ ] **Physics Engine Example**: A demo showcasing `texgen.js` combined with a 2D physics engine like Matter.js or P2.js.
+- [ ] **Audio-Reactive Textures**: A visualizer demo using Web Audio API to drive shader uniforms.
+- [ ] **Multiplayer Maze**: An extension of the 3D Maze demo with simple WebRTC-based multiplayer.
 
 ## ✅ Completed
 - [x] Initial Library Core
 - [x] Shader Compression System ($ tokens)
 - [x] Texture Generator IDE
-- [x] 2D Platformer Example
-- [x] 3D Maze Example
-- [x] Marble Roller Example
-- [x] Endless Flight Sim Example (Baked Terrain + Real-time Sky)
+- [x] 2D Platformer Example (Ultimate Version)
+- [x] 3D Maze Example (Adaptive + Mobile)
+- [x] Marble Roller Example (Adaptive + Mobile)
+- [x] Endless Flight Sim Example (Fixed + Optimized)
 - [x] Card Roguelike Example (Procedural UI)
 - [x] Solitaire Example (Responsive 2D)
 - [x] TypeScript Support (.d.ts definitions)
