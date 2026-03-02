@@ -3,2049 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TexGen - Procedural Texture Generator</title>
+    <title>TexGen - Procedural Texture Library</title>
     <style>
         :root {
-            --bg-color: #1e1e1e;
-            --panel-bg: #2d2d2d;
-            --text-color: #d4d4d4;
-            --border-color: #444;
-            --accent-color: #007acc;
+            --bg: #0a0a0c;
+            --panel: #16161e;
+            --text: #e0e0e6;
+            --accent: #00ffcc;
+            --secondary: #7aa2f7;
+            --error: #f48771;
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
         }
 
-        #editor-panel {
-            width: 40%;
-            min-width: 350px;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border-color);
-            background-color: var(--panel-bg);
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
         }
 
-        .header {
-            padding: 10px 15px;
-            background-color: #252526;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px 0;
+            background: linear-gradient(180deg, #1a1b26 0%, var(--bg) 100%);
+            border-bottom: 1px solid #24283b;
         }
 
-        .header h1 {
+        h1 {
+            font-size: 4rem;
             margin: 0;
-            font-size: 16px;
-            font-weight: normal;
-            white-space: nowrap;
+            color: var(--accent);
+            letter-spacing: -2px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
         }
 
-        #compile-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            cursor: pointer;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        #compile-btn:hover {
-            background-color: #0098ff;
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            font-weight: 300;
         }
 
-        #example-select {
-            background-color: #3c3c3c;
-            color: white;
-            border: 1px solid var(--border-color);
-            padding: 4px;
-            border-radius: 3px;
-            font-size: 12px;
-            outline: none;
-            flex-grow: 1;
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 80px;
+            align-items: start;
         }
 
-        .tool-bar {
-            padding: 5px 15px;
-            background-color: #333;
+        .hero-text h2 {
+            font-size: 2rem;
+            color: #fff;
+            margin-top: 0;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            margin-bottom: 15px;
             display: flex;
-            gap: 10px;
-            border-bottom: 1px solid var(--border-color);
             align-items: center;
-            flex-wrap: wrap;
         }
 
-        .tool-btn {
-            background-color: transparent;
-            color: #ccc;
-            border: 1px solid #555;
-            padding: 4px 10px;
-            font-size: 11px;
-            cursor: pointer;
-            border-radius: 2px;
-            white-space: nowrap;
+        .feature-list li::before {
+            content: "✦";
+            color: var(--accent);
+            margin-right: 15px;
+            font-size: 1.2rem;
         }
 
-        .tool-btn:hover {
-            background-color: #444;
-            color: white;
+        .interactive-example {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #24283b;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .tool-btn.danger:hover {
-            background-color: #a1260d;
+        #hero-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            background: #000;
         }
 
-        #texture-name {
-            background-color: #1e1e1e;
-            color: white;
-            border: 1px solid #555;
-            padding: 3px 8px;
-            font-size: 11px;
-            border-radius: 2px;
-            width: 120px;
-        }
-
-        #sliders-panel {
-            padding: 10px 15px;
-            background-color: #252526;
-            border-bottom: 1px solid var(--border-color);
-            display: none;
+        .controls {
+            display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: 150px;
-            overflow-y: auto;
         }
 
         .slider-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 12px;
+            gap: 15px;
+            font-size: 0.9rem;
         }
 
         .slider-row label {
-            width: 80px;
-            white-space: nowrap;
+            width: 100px;
+            color: var(--secondary);
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .slider-row input[type="range"] {
+        .slider-row input {
             flex-grow: 1;
+            cursor: pointer;
         }
 
-        .slider-row .slider-val {
-            width: 40px;
-            text-align: right;
-            font-family: monospace;
-        }
-
-        #editor-wrapper {
-            flex-grow: 1;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        textarea {
-            flex-grow: 1;
+        #shader-editor {
             width: 100%;
-            box-sizing: border-box;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            border: none;
+            height: 200px;
+            background: #1a1b26;
+            color: #a9b1d6;
+            border: 1px solid #24283b;
+            border-radius: 8px;
             padding: 15px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            resize: none;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
             outline: none;
-            white-space: pre;
-            overflow-wrap: normal;
-            overflow-x: auto;
+            box-sizing: border-box;
+        }
+
+        #shader-editor:focus {
+            border-color: var(--accent);
         }
 
         #error-log {
-            height: 120px;
-            background-color: #2d2d2d;
-            border-top: 1px solid var(--border-color);
-            padding: 10px;
-            font-family: 'Consolas', monospace;
-            font-size: 12px;
-            color: #ccc;
-            overflow-y: auto;
-            box-sizing: border-box;
+            color: var(--error);
+            font-size: 0.8rem;
+            font-family: monospace;
             white-space: pre-wrap;
-        }
-
-        #visualization-panel {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 1px;
-            background-color: var(--border-color);
-        }
-
-        .view-container {
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .view-container.view-2d {
-            grid-column: 1 / -1;
-        }
-
-        .view-title {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            z-index: 10;
-            pointer-events: none;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .canvas-container {
-            flex-grow: 1;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        canvas {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        /* Modal / Gallery */
-        #gallery-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 1000;
             display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #gallery-modal {
-            background: var(--panel-bg);
-            width: 85%;
-            height: 85%;
-            border-radius: 8px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
-            overflow-y: auto;
-            flex-grow: 1;
             padding: 10px;
-        }
-
-        .gallery-item {
-            cursor: pointer;
-            border: 2px solid #444;
-            border-radius: 6px;
-            background: #252526;
-            transition: all 0.2s;
-            text-align: center;
-            padding: 10px;
-        }
-
-        .gallery-item:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-            background: #2d2d2d;
-        }
-
-        .gallery-item img {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
+            background: rgba(244, 135, 113, 0.1);
             border-radius: 4px;
-            display: block;
-            background: #111;
         }
 
-        .gallery-item span {
-            font-size: 12px;
-            margin-top: 8px;
-            display: block;
-            color: #eee;
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
         }
 
-        /* Toast Notifications */
-        #toast-container {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            z-index: 2000;
+        .demo-card {
+            background: var(--panel);
+            border: 1px solid #24283b;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            color: inherit;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            justify-content: space-between;
         }
 
-        .toast {
-            background: #333;
-            color: white;
-            padding: 12px 24px;
+        .demo-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 255, 204, 0.1);
+        }
+
+        .demo-card h3 {
+            margin: 0 0 10px 0;
+            color: var(--accent);
+            font-size: 1.4rem;
+        }
+
+        .demo-card p {
+            font-size: 0.95rem;
+            color: #9aa5ce;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
             border-radius: 6px;
-            font-size: 13px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
-            border-left: 5px solid var(--accent-color);
-            animation: toast-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 250px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s;
         }
 
-        @keyframes toast-in {
-            from { transform: translateX(110%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .demo-card:hover .btn {
+            background: var(--accent);
+            color: #000;
         }
 
-        .toast.success { border-left-color: #89d185; }
-        .toast.error { border-left-color: #f48771; }
-        .toast.info { border-left-color: #007acc; }
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 40px 0;
+            border-top: 1px solid #24283b;
+            color: #565f89;
+            font-size: 0.9rem;
+        }
 
-        .CodeMirror { height: 100%; flex-grow: 1; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; z-index: 1;}
-        input[type="color"] { border: none; padding: 0; width: 24px; height: 24px; cursor: pointer; background: transparent;}
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 2px; }
-
+        @media (max-width: 768px) {
+            .hero { grid-template-columns: 1fr; }
+            h1 { font-size: 3rem; }
+        }
     </style>
-    <!-- JSZip -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- CodeMirror -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/16/Stats.min.js"></script>
 </head>
 <body>
 
-    <div id="editor-panel">
-        <div class="header">
+    <header>
+        <div class="container">
             <h1>TexGen</h1>
-            
-            <select id="example-select">
-                <option value="default">Select Example...</option>
-                <optgroup label="Nature & Terrain">
-                    <option value="island">Island Map</option>
-                    <option value="water">Water</option>
-                    <option value="grass">Grass Floor</option>
-                    <option value="sand">Sand</option>
-                    <option value="stone">Stone</option>
-                    <option value="clouds">Clouds</option>
-                    <option value="marble">Marble</option>
-                    <option value="concrete">Concrete</option>
-                    <option value="ice">Ice</option>
-                    <option value="muddy_trenches">Muddy Trenches</option>
-                    <option value="mossy_cobble">Mossy Cobble</option>
-                    <option value="pixel_dirt">Pixel Dirt</option>
-                </optgroup>
-                <optgroup label="Architecture & Industrial">
-                    <option value="bricks">Bricks</option>
-                    <option value="wood">Wooden Wall</option>
-                    <option value="planks">Wooden Planks</option>
-                    <option value="panels">Metal Panels</option>
-                    <option value="industrial">Industrial Floor</option>
-                    <option value="rusty_grate">Rusty Grate</option>
-                    <option value="warning_sign">Warning Sign</option>
-                    <option value="corrugated_metal">Corrugated Metal</option>
-                    <option value="caution_tape">Caution Tape</option>
-                    <option value="industrial_pipes">Industrial Pipes</option>
-                    <option value="chainlink">Chainlink Fence</option>
-                    <option value="hazard">Hazard Stripes</option>
-                    <option value="scifi">Sci-fi Wall</option>
-                    <option value="space_hull">Space Hull</option>
-                </optgroup>
-                <optgroup label="Advanced PBR Materials">
-                    <option value="pbr_gold">PBR Gold</option>
-                    <option value="pbr_copper">PBR Copper</option>
-                    <option value="pbr_silver">PBR Silver</option>
-                    <option value="pbr_iron">PBR Iron</option>
-                    <option value="pbr_bronze">PBR Bronze</option>
-                    <option value="pbr_steel">PBR Steel</option>
-                    <option value="pbr_chrome">PBR Chrome</option>
-                    <option value="pbr_rust">PBR Rusty Metal</option>
-                    <option value="pbr_rusted_hull">PBR Rusted Hull</option>
-                    <option value="pbr_obsidian">PBR Obsidian</option>
-                    <option value="pbr_ruby">PBR Ruby</option>
-                    <option value="pbr_emerald">PBR Emerald</option>
-                    <option value="pbr_sapphire">PBR Sapphire</option>
-                    <option value="pbr_pearl">PBR Pearl</option>
-                    <option value="pbr_opal">PBR Opal</option>
-                    <option value="pbr_carbon">PBR Carbon Fiber</option>
-                    <option value="pbr_forged_carbon">PBR Forged Carbon</option>
-                    <option value="pbr_wood_lacquer">PBR Lacquered Wood</option>
-                    <option value="pbr_concrete_wet">PBR Wet Concrete</option>
-                    <option value="pbr_mud">PBR Thick Mud</option>
-                    <option value="pbr_snow">PBR Packed Snow</option>
-                    <option value="pbr_sand_wet">PBR Wet Sand</option>
-                    <option value="pbr_lava_crust">PBR Lava Crust</option>
-                    <option value="pbr_mossy_stone">PBR Mossy Stone</option>
-                    <option value="pbr_velvet">PBR Red Velvet</option>
-                    <option value="pbr_denim">PBR Blue Denim</option>
-                    <option value="pbr_leather">PBR Leather</option>
-                    <option value="pbr_leather_worn">PBR Worn Leather</option>
-                    <option value="pbr_plastic">PBR Shiny Plastic</option>
-                    <option value="pbr_plastic_matte">PBR Matte Plastic</option>
-                    <option value="pbr_gold_leaf">PBR Gold Leaf</option>
-                    <option value="pbr_diamond_encrusted">PBR Diamond Dust</option>
-                    <option value="pbr_marble_polished">PBR Polished Marble</option>
-                    <option value="pbr_ice_cracked">PBR Cracked Ice</option>
-                </optgroup>
-                <optgroup label="FX & Elements">
-                    <option value="fire">Fire</option>
-                    <option value="lava">Lava</option>
-                    <option value="lava_bubbles">Lava Bubbles</option>
-                    <option value="magic_portal">Magic Portal</option>
-                    <option value="potion_liquid">Potion Liquid</option>
-                    <option value="alien_sludge">Alien Sludge</option>
-                    <option value="neon_grid">Neon Grid</option>
-                    <option value="energy_shield">Energy Shield</option>
-                    <option value="plasma_pipe">Plasma Pipe</option>
-                    <option value="thermal_view">Thermal Vision</option>
-                    <option value="radar_screen">Radar Screen</option>
-                    <option value="cyber_pulse">Cyber Pulse</option>
-                    <option value="cyber_glow">Cyber Glow</option>
-                    <option value="oil_slick">Oil Slick</option>
-                    <option value="toon_clouds">Toon Clouds</option>
-                    <option value="rainbow_path">Rainbow Path</option>
-                </optgroup>
-                <optgroup label="Patterns & Geometric">
-                    <option value="checkerboard">Retro Checker</option>
-                    <option value="candy_ground">Candy Ground</option>
-                    <option value="dots">Studded Metal</option>
-                    <option value="hexagons">Hexagon Tiles</option>
-                    <option value="stars">Starfield</option>
-                    <option value="weave">Carbon Fiber</option>
-                    <option value="para_bricks">Parametric Bricks</option>
-                    <option value="para_stripes">Parametric Stripes</option>
-                    <option value="para_grid">Parametric Grid</option>
-                    <option value="para_waves">Parametric Waves</option>
-                    <option value="para_circles">Parametric Circles</option>
-                    <option value="para_polka">Parametric Polka</option>
-                    <option value="para_checker">Parametric Checker</option>
-                </optgroup>
-                <optgroup label="Biological & Alien">
-                    <option value="alien_skin">Alien Skin</option>
-                    <option value="alien_veins">Alien Veins</option>
-                    <option value="alien_flesh">Alien Flesh</option>
-                    <option value="alien_eyes">Alien Eyes</option>
-                    <option value="alien_tech">Alien Tech</option>
-                    <option value="dragon_scales">Dragon Scales</option>
-                    <option value="camo_jungle">Jungle Camo</option>
-                </optgroup>
-            </select>
-            <button id="compile-btn">Compile</button>
+            <p class="tagline">The Lightweight Procedural Texture Library for Modern Web Apps</p>
         </div>
-        <div class="tool-bar">
-            <button class="tool-btn" id="gallery-btn">Gallery</button>
-            <button class="tool-btn" id="my-textures-btn">My Textures</button>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <input type="text" id="texture-name" placeholder="Texture Name" value="Untitled">
-            <button class="tool-btn" id="save-btn" style="background-color: #2e5d32;">Save</button>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <select id="mesh-select" class="tool-btn" style="background: #3c3c3c; border: 1px solid #555; color: white;">
-                <option value="cube">Cube</option>
-                <option value="sphere">Sphere</option>
-                <option value="cylinder">Cylinder</option>
-                <option value="torus">Torus</option>
-                <option value="plane">Plane</option>
-            </select>
-            <label class="tool-btn" style="cursor:pointer; display:flex; align-items:center;">
-                + Image (u_tex0)
-                <input type="file" id="image-upload" accept="image/*" style="display:none;">
-            </label>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <button class="tool-btn" id="bake-btn">Bake Preview</button>
-            <button class="tool-btn" id="bake-pbr-btn" style="color:#ffd700;">Bake PBR Set (.zip)</button>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <button class="tool-btn" id="seed-btn" style="color: #ff9800;">🎲 Seed</button>
-            <button class="tool-btn" id="record-btn" style="color: #f44336;">⏺ Record (WebM)</button>
-            <select id="engine-export-select" class="tool-btn" style="background: #3c3c3c; border: 1px solid #555; color: white;">
-                <option value="raw">Raw (PBR)</option>
-                <option value="unity">Unity HDRP</option>
-                <option value="unreal">Unreal (ORM)</option>
-            </select>
-            <button class="tool-btn" id="bake-sprites-btn" style="color:#00ffff;">Bake Spritesheet</button>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <button class="tool-btn" id="export-storage-btn">Export All</button>
-            <button class="tool-btn" id="import-storage-btn">Import All</button>
-            <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <button class="tool-btn" id="compress-btn">Copy Compressed <span id="compressed-size" style="opacity: 0.7; font-size: 0.9em; margin-left: 5px;"></span></button>
-        </div>
-        <div id="sliders-panel"></div>
-        <div id="editor-wrapper">
-            <textarea id="shader-code" spellcheck="false"></textarea>
-            <div id="error-log">Initializing...</div>
-        </div>
-    </div>
+    </header>
 
-    <div id="visualization-panel">
-        <div class="view-container view-2d">
-            <div class="view-title">2D Texture Output</div>
-            <div id="view-2d" class="canvas-container"></div>
-        </div>
-        <div class="view-container">
-            <div class="view-title">3D Preview</div>
-            <div id="view-cube" class="canvas-container"></div>
-        </div>
-        <div class="view-container">
-            <div class="view-title">Tiling (3x3)</div>
-            <div id="view-wall" class="canvas-container"></div>
-        </div>
-    </div>
-
-    <div id="gallery-overlay">
-        <div id="gallery-modal">
-            <div class="header">
-                <h2 id="gallery-title">Example Gallery</h2>
-                <button class="tool-btn" id="close-gallery">Close</button>
+    <div class="container">
+        <section class="hero">
+            <div class="hero-text">
+                <h2>Visuals with code, not bandwidth.</h2>
+                <p>TexGen is a small (~15kb) JavaScript library that leverages WebGL shaders to create high-quality, procedural textures on the fly. Whether you need static baked images or real-time animated backgrounds, TexGen provides the tools to build them.</p>
+                <ul class="feature-list">
+                    <li>Built-in Noise, FBM, and Voronoi functions</li>
+                    <li>Static baking to PNG/DataURL at any resolution</li>
+                    <li>Real-time WebGL texture updates</li>
+                    <li>Support for PBR (Physically Based Rendering) maps</li>
+                    <li>High-performance, GPU-accelerated generation</li>
+                </ul>
             </div>
-            <div class="gallery-grid" id="gallery-grid"></div>
-        </div>
+            <div class="interactive-example">
+                <canvas id="hero-canvas" width="512" height="512"></canvas>
+                <div id="error-log"></div>
+                <div class="controls" id="sliders-container"></div>
+                <textarea id="shader-editor" spellcheck="false">
+uniform float u_scale; // @slider 1.0, 10.0, 4.0
+uniform float u_speed; // @slider 0.0, 2.0, 0.5
+
+void main() {
+  vec2 st = vUv * u_scale;
+  float t = u_time * u_speed;
+  float n = fbm(st + vec2(t, t * 0.4), u_scale);
+  
+  vec3 col1 = vec3(0.0, 0.2, 0.5);
+  vec3 col2 = vec3(0.0, 1.0, 0.8);
+  vec3 color = mix(col1, col2, n);
+  
+  gl_FragColor = vec4(color * (n + 0.2), 1.0);
+}</textarea>
+            </div>
+        </section>
+
+        <section>
+            <h2 style="text-align: center; font-size: 2.2rem; margin-bottom: 40px;">Explore the Demos</h2>
+            <div class="demo-grid">
+                <a href="example/texture_generator/index.html" class="demo-card">
+                    <div>
+                        <h3>Texture Editor</h3>
+                        <p>The full IDE for creating, compressing, and exporting your own procedural textures.</p>
+                    </div>
+                    <div class="btn">Launch Editor</div>
+                </a>
+
+                <a href="example/platformer/index.html" class="demo-card">
+                    <div>
+                        <h3>Ultimate Platformer</h3>
+                        <p>A 2D game where every block, enemy, and background is procedurally generated at runtime.</p>
+                    </div>
+                    <div class="btn">Play Now</div>
+                </a>
+
+                <a href="example/maze3d/index.html" class="demo-card">
+                    <div>
+                        <h3>3D Maze Explorer</h3>
+                        <p>A first-person explorer featuring real-time animated textures on walls, floors, and ceilings.</p>
+                    </div>
+                    <div class="btn">Explore 3D</div>
+                </a>
+
+                <a href="example/marble_roller/index.html" class="demo-card">
+                    <div>
+                        <h3>Marble Roller</h3>
+                        <p>An orthographic 2.5D physics game with procedural marble, floor tiles, and environmental hazards.</p>
+                    </div>
+                    <div class="btn">Start Rolling</div>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 TexGen Project. Built with procedural love.</p>
+        </footer>
     </div>
 
-    <div id="toast-container"></div>
-
+    <script src="texgen.js"></script>
     <script>
-        // --- Library Data ---
-        const UTILS = `// --- Utility Functions ---
-uniform float u_seed;
-float random (in vec2 st) {
-    return fract(sin(dot(st.xy + u_seed, vec2(12.9898,78.233))) * 43758.5453123);
-}
-
-// Seamless Tiling Noise
-float noise(vec2 st, float p) {
-    vec2 i = floor(st);
-    vec2 f = fract(st);
-    vec2 i0 = mod(i, p);
-    vec2 i1 = mod(i + 1.0, p);
-    float a = random(i0);
-    float b = random(vec2(i1.x, i0.y));
-    float c = random(vec2(i0.x, i1.y));
-    float d = random(i1);
-    vec2 u = f*f*(3.0-2.0*f);
-    return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-}
-
-float fbm(vec2 st, float p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 5; i++) {
-        v += a * noise(st, p);
-        st *= 2.0;
-        p *= 2.0;
-        a *= 0.5;
-    }
-    return v;
-}
-
-// --- Voronoi & Cellular Noise ---
-vec2 hash22(vec2 p) {
-    p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)));
-    return fract(sin(p)*43758.5453123);
-}
-
-float voronoi(vec2 x) {
-    vec2 n = floor(x);
-    vec2 f = fract(x);
-    float m_dist = 1.0;
-    for(int j=-1; j<=1; j++) {
-        for(int i=-1; i<=1; i++) {
-            vec2 g = vec2(float(i),float(j));
-            vec2 o = hash22(n + g);
-            vec2 r = g + o - f;
-            float d = dot(r,r);
-            if(d < m_dist) m_dist = d;
-        }
-    }
-    return sqrt(m_dist);
-}
-
-// Shape Helpers
-float sdCircle(vec2 p, float r) {
-    return length(p) - r;
-}
-
-float sdBox(vec2 p, vec2 b) {
-    vec2 d = abs(p) - b;
-    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-}
-
-// --- PBR & Bump Mapping Helpers ---
-struct PBRData {
-    vec3 albedo;
-    float roughness;
-    float metallic;
-    float ambientOcclusion;
-    vec3 normal;
-};
-
-// Calculate normal from a scalar height value using screen-space derivatives
-vec3 calculateNormal(float height, float strength) {
-    vec3 normal = vec3(dFdx(height), dFdy(height), 0.01 / strength);
-    return normalize(normal);
-}
-
-// Simple PBR Lighting approximation for preview
-vec3 applyPBRLighting(PBRData pbr, vec3 lightDir, vec3 viewDir, vec3 lightCol) {
-    if (u_bakeMode == 1) return pbr.albedo;
-    if (u_bakeMode == 2) return pbr.normal * 0.5 + 0.5;
-    if (u_bakeMode == 3) return vec3(pbr.roughness);
-    if (u_bakeMode == 4) return vec3(pbr.metallic);
-    if (u_bakeMode == 5) return vec3(pbr.ambientOcclusion);
-
-    vec3 N = pbr.normal;
-    vec3 V = viewDir;
-    vec3 L = normalize(lightDir);
-    vec3 H = normalize(V + L);
-
-    float dotNH = max(dot(N, H), 0.0);
-    float dotNV = max(dot(N, V), 0.0);
-    float dotNL = max(dot(N, L), 0.0);
-
-    // Fresnel (Schlick)
-    vec3 F0 = mix(vec3(0.04), pbr.albedo, pbr.metallic);
-    vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    // Specular (Cook-Torrance DNDF approximation)
-    float alpha = pbr.roughness * pbr.roughness;
-    float D = alpha / (3.14159 * pow(dotNH * dotNH * (alpha - 1.0) + 1.0, 2.0));
-    
-    // Geometry (Smith)
-    float k = alpha * 0.5;
-    float G = (dotNL / (dotNL * (1.0 - k) + k)) * (dotNV / (dotNV * (1.0 - k) + k));
-
-    vec3 specular = (D * F * G) / (4.0 * dotNL * dotNV + 0.001);
-    vec3 diffuse = (1.0 - F) * (1.0 - pbr.metallic) * pbr.albedo / 3.14159;
-
-    return (diffuse + specular) * lightCol * dotNL + pbr.albedo * 0.05 * pbr.ambientOcclusion;
-}
-`;
-
-                const shaders = {
-            island: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st + u_time * 0.05, scale);
-    vec3 water = vec3(0.0, 0.2, 0.5);
-    vec3 grass = vec3(0.2, 0.5, 0.1);
-    vec3 mount = vec3(0.5, 0.5, 0.5);
-    vec3 color = mix(water, grass, smoothstep(0.4, 0.5, n));
-    color = mix(color, mount, smoothstep(0.7, 0.8, n));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            water: `void main() {
-    float scale = 8.0;
-    vec2 st = vUv * scale;
-    float n1 = fbm(st + u_time * 0.2, scale);
-    float n2 = fbm(st - u_time * 0.3, scale);
-    float ripple = sin(st.x * 1.5 + n1 * 6.0) * 0.5 + 0.5;
-    ripple *= sin(st.y * 1.2 + n2 * 4.0) * 0.5 + 0.5;
-    vec3 deep = vec3(0.0, 0.1, 0.3);
-    vec3 shallow = vec3(0.1, 0.6, 0.8);
-    vec3 color = mix(deep, shallow, ripple * (n1 + n2) * 0.5);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            grass: `void main() {
-    float scale = 16.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st + u_time * 0.05, scale);
-    vec3 darkGreen = vec3(0.1, 0.3, 0.05);
-    vec3 lightGreen = vec3(0.4, 0.6, 0.1);
-    vec3 color = mix(darkGreen, lightGreen, n);
-    float wind = sin(st.x * 3.0 + u_time * 5.0 + n * 10.0);
-    color += wind * 0.05;
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            sand: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st * 4.0, scale * 4.0);
-    float ripple = sin(vUv.x * 31.415 + vUv.y * 12.56 + n * 5.0) * 0.5 + 0.5;
-    vec3 base = vec3(0.8, 0.7, 0.5);
-    vec3 shadow = vec3(0.65, 0.55, 0.4);
-    vec3 color = mix(shadow, base, ripple * 0.6 + 0.4);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            stone: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st, scale);
-    vec3 color = mix(vec3(0.3), vec3(0.5, 0.5, 0.45), smoothstep(0.4, 0.5, n));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            clouds: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st + u_time * 0.1, scale);
-    vec3 sky = vec3(0.4, 0.6, 0.9);
-    vec3 color = mix(sky, vec3(1.0), smoothstep(0.4, 0.8, n));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            marble: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st + fbm(st * 2.0, scale * 2.0), scale);
-    vec3 color = mix(vec3(0.95), vec3(0.2, 0.2, 0.25), pow(n, 3.0));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            concrete: `void main() {
-    float scale = 10.0;
-    float n = fbm(vUv * scale, scale);
-    vec3 color = vec3(0.6) + n * 0.1;
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            ice: `void main() {
-    float scale = 4.0;
-    float n = fbm(vUv * scale, scale);
-    vec3 color = mix(vec3(0.7, 0.9, 1.0), vec3(1.0), n);
-    gl_FragColor = vec4(color, 0.8);
-}`,
-            muddy_trenches: `void main() {
-    float h = fbm(vUv * 5.0, 5.0);
-    vec3 color = mix(vec3(0.2, 0.1, 0.05), vec3(0.4, 0.3, 0.2), h);
-    float wet = smoothstep(0.6, 0.7, fbm(vUv * 10.0 + u_time * 0.1, 10.0));
-    color = mix(color, vec3(0.1, 0.1, 0.15), wet);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            mossy_cobble: `void main() {
-    vec2 st = vUv * 5.0;
-    float d = length(fract(st) - 0.5);
-    float moss = fbm(vUv * 10.0, 10.0);
-    vec3 color = mix(vec3(0.3), vec3(0.5), smoothstep(0.4, 0.45, d));
-    color = mix(color, vec3(0.1, 0.3, 0.05), smoothstep(0.4, 0.6, moss));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            pixel_dirt: `void main() {
-    vec2 st = floor(vUv * 32.0) / 32.0;
-    float n = fbm(st * 5.0, 5.0);
-    vec3 color = mix(vec3(0.3, 0.2, 0.1), vec3(0.5, 0.4, 0.2), n);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            bricks: `void main() {
-    vec2 st = vUv * vec2(4.0, 8.0);
-    if(fract(st.y * 0.5) > 0.5) st.x += 0.5;
-    vec2 f = fract(st);
-    float brick = step(0.05, f.x) * step(0.05, f.y) * step(f.x, 0.95) * step(f.y, 0.95);
-    vec3 color = mix(vec3(0.3), vec3(0.6, 0.3, 0.2), brick);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            wood: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st * vec2(1.0, 4.0), scale * 4.0);
-    float rings = fract(length(vUv - 0.5) * 10.0 + n);
-    rings = smoothstep(0.4, 0.5, rings) - smoothstep(0.5, 0.6, rings);
-    vec3 base = vec3(0.4, 0.2, 0.1);
-    vec3 dark = vec3(0.2, 0.1, 0.05);
-    vec3 color = mix(base, dark, n + rings * 0.3);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            planks: `void main() {
-    vec2 st = vUv * vec2(2.0, 10.0);
-    vec2 ipos = floor(st);
-    vec2 fpos = fract(st);
-    float n = random(mod(ipos, vec2(2.0, 10.0)));
-    vec3 color = mix(vec3(0.4, 0.25, 0.1), vec3(0.5, 0.35, 0.2), n);
-    color *= 0.9 + 0.2 * fbm(vUv * vec2(10.0, 40.0), 20.0);
-    float gap = step(0.02, fpos.x) * step(0.02, fpos.y);
-    color = mix(vec3(0.05), color, gap);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            panels: `void main() {
-    float scale = 3.0;
-    vec2 st = vUv * scale;
-    vec2 ipos = floor(st);
-    vec2 fpos = fract(st);
-    vec3 color = vec3(0.5) + random(mod(ipos, scale)) * 0.1;
-    float d = sdBox(fpos - 0.5, vec2(0.47));
-    color = mix(vec3(0.2), color, smoothstep(0.0, 0.02, d));
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            industrial: `void main() {
-    float scale = 8.0;
-    vec2 st = vUv * scale;
-    if(fract(st.y * 0.5) > 0.5) st.x += 0.5;
-    vec2 fpos = fract(st);
-    float a = 0.785;
-    mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
-    vec2 p = rot * (fpos - 0.5);
-    float d = sdBox(p, vec2(0.3, 0.1));
-    vec3 color = vec3(0.4);
-    float mask = smoothstep(0.01, -0.01, d);
-    color = mix(color, vec3(0.5), mask);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            rusty_grate: `void main() {
-    vec2 st = fract(vUv * 10.0);
-    float hole = sdCircle(st - 0.5, 0.3);
-    float rust = fbm(vUv * 10.0, 10.0);
-    vec3 color = mix(vec3(0.4), vec3(0.4, 0.2, 0.1), rust);
-    float mask = step(0.0, hole);
-    gl_FragColor = vec4(color * mask, mask);
-}`,
-            warning_sign: `void main() {
-    vec2 st = vUv * 10.0;
-    float stripe = step(0.5, fract(st.x + st.y));
-    vec3 color = mix(vec3(0.0), vec3(1.0, 0.8, 0.0), stripe);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            corrugated_metal: `void main() {
-    float ridge = sin(vUv.x * 62.83);
-    vec3 color = vec3(0.5) + ridge * 0.1;
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            caution_tape: `void main() {
-    float strip = step(0.4, vUv.y) * step(vUv.y, 0.6);
-    float stripe = step(0.5, fract(vUv.x * 20.0 + vUv.y * 20.0));
-    vec3 color = mix(vec3(0.1), vec3(1.0, 0.8, 0.0), stripe);
-    gl_FragColor = vec4(color, strip);
-}`,
-            industrial_pipes: `void main() {
-    float pipe = sin(vUv.y * 31.415);
-    vec3 color = vec3(0.4) + pipe * 0.1;
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            chainlink: `void main() {
-    float scale = 10.0;
-    vec2 st = vUv * scale;
-    vec2 f = fract(st);
-    float wire = min(abs(f.x - f.y), abs(f.x - (1.0 - f.y)));
-    float mask = smoothstep(0.05, 0.0, wire);
-    gl_FragColor = vec4(vec3(0.7), mask);
-}`,
-            hazard: `void main() {
-    float scale = 10.0;
-    vec2 st = vUv * scale;
-    float stripe = fract(st.x + st.y);
-    gl_FragColor = vec4(mix(vec3(0.1), vec3(1.0, 0.8, 0.0), step(0.5, stripe)), 1.0);
-}`,
-            scifi: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    vec3 color = vec3(0.1 + random(floor(st)) * 0.05);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            space_hull: `void main() {
-    float scale = 5.0;
-    vec2 st = vUv * scale;
-    vec3 color = vec3(0.2 + random(floor(st)) * 0.1);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            pbr_gold: `void main() {
-    float h = fbm(vUv * 4.0, 4.0);
-    PBRData pbr;
-    pbr.albedo = vec3(1.0, 0.76, 0.33);
-    pbr.roughness = 0.2 + h * 0.3;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.5;
-    pbr.normal = calculateNormal(h, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_copper: `void main() {
-    float h = fbm(vUv * 8.0, 8.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.72, 0.45, 0.2);
-    pbr.roughness = 0.2 + h * 0.2;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.3;
-    pbr.normal = calculateNormal(h * 0.05, 0.8);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_silver: `void main() {
-    float n = noise(vUv * vec2(1.0, 100.0), 100.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.95);
-    pbr.roughness = 0.1 + n * 0.5;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.005, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_iron: `void main() {
-    float h = fbm(vUv * 10.0, 10.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.2);
-    pbr.roughness = 0.5 + h * 0.3;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.5;
-    pbr.normal = calculateNormal(h, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            pbr_bronze: `void main() {
-    float h = fbm(vUv * 5.0, 5.0);
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.5, 0.3, 0.1), vec3(0.2, 0.4, 0.3), h * 0.5);
-    pbr.roughness = 0.3 + h * 0.4;
-    pbr.metallic = 0.9;
-    pbr.ambientOcclusion = 1.0 - h * 0.4;
-    pbr.normal = calculateNormal(h * 0.05, 0.6);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.4)), 1.0);
-}`,
-            pbr_steel: `void main() {
-    float n = fbm(vUv * 20.0, 20.0);
-    float scratches = pow(random(vUv * 100.0), 10.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.7);
-    pbr.roughness = 0.2 + n * 0.2 + scratches * 0.5;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.02 + scratches * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_chrome: `void main() {
-    PBRData pbr;
-    pbr.albedo = vec3(1.0);
-    pbr.roughness = 0.02;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = vec3(0,0,1);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(2.0)), 1.0);
-}`,
-            pbr_rust: `void main() {
-    float h = fbm(vUv * 4.0, 4.0);
-    float rust_n = fbm(vUv * 8.0 + 1.23, 8.0);
-    PBRData pbr;
-    float isRust = smoothstep(0.4, 0.6, rust_n);
-    pbr.albedo = mix(vec3(0.7), vec3(0.4, 0.15, 0.05), isRust);
-    pbr.roughness = mix(0.3, 0.9, isRust);
-    pbr.metallic = mix(1.0, 0.0, isRust);
-    pbr.ambientOcclusion = 1.0 - h * 0.5;
-    pbr.normal = calculateNormal(h * 0.1, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_rusted_hull: `void main() {
-    float h = fbm(vUv * 4.0, 4.0);
-    float rust = smoothstep(0.3, 0.7, fbm(vUv * 12.0 + 5.67, 12.0));
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.3), vec3(0.4, 0.15, 0.05), rust);
-    pbr.roughness = mix(0.4, 0.9, rust);
-    pbr.metallic = mix(1.0, 0.0, rust);
-    pbr.ambientOcclusion = 1.0 - h * 0.3;
-    pbr.normal = calculateNormal(h * 0.1 + rust * 0.05, 0.6);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            pbr_obsidian: `void main() {
-    float v = voronoi(vUv * 5.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.02, 0.02, 0.03);
-    pbr.roughness = 0.1 + v * 0.2;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(v * 0.5, 1.0);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.8)), 1.0);
-}`,
-            pbr_ruby: `void main() {
-    float h = fbm(vUv * 10.0, 10.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.8, 0.0, 0.1);
-    pbr.roughness = 0.1 + h * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(h * 0.1, 0.5);
-    vec3 col = applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(2.0));
-    gl_FragColor = vec4(col, 0.8);
-}`,
-            pbr_emerald: `void main() {
-    float v = voronoi(vUv * 8.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.0, 0.6, 0.2);
-    pbr.roughness = 0.2 + v * 0.3;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - v * 0.2;
-    pbr.normal = calculateNormal(v, 0.8);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_sapphire: `void main() {
-    float h = fbm(vUv * 12.0, 12.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.05, 0.1, 0.6);
-    pbr.roughness = 0.05 + h * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(h * 0.05, 0.4);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(2.0)), 0.9);
-}`,
-            pbr_pearl: `void main() {
-    float n = fbm(vUv * 5.0, 5.0);
-    PBRData pbr;
-    vec3 iridescent = 0.8 + 0.2 * cos(6.283 * (n + vec3(0, 0.33, 0.67)));
-    pbr.albedo = iridescent;
-    pbr.roughness = 0.1 + n * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.02, 0.3);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_carbon: `void main() {
-    vec2 st = vUv * 20.0;
-    float d = fract(floor(st.x) + floor(st.y) * 0.5) > 0.5 ? fract(st.x) : fract(st.y);
-    PBRData pbr;
-    pbr.albedo = vec3(0.05);
-    pbr.roughness = mix(0.1, 0.4, d);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - d * 0.2;
-    pbr.normal = calculateNormal(d * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            pbr_wood_lacquer: `void main() {
-    float n = fbm(vUv * vec2(2.0, 15.0), 15.0);
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.4, 0.2, 0.1), vec3(0.2, 0.1, 0.05), n);
-    pbr.roughness = 0.05;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.01, 0.2);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_concrete_wet: `void main() {
-    float n = fbm(vUv * 20.0, 20.0);
-    float wet = smoothstep(0.4, 0.6, fbm(vUv * 5.0 + u_time * 0.05, 5.0));
-    PBRData pbr;
-    pbr.albedo = vec3(0.4 + n * 0.1);
-    pbr.roughness = mix(0.7, 0.1, wet);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - n * 0.2;
-    pbr.normal = calculateNormal(n * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.3)), 1.0);
-}`,
-            pbr_mud: `void main() {
-    float h = fbm(vUv * 5.0, 5.0);
-    float wet = smoothstep(0.6, 0.8, fbm(vUv * 10.0, 10.0));
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.2, 0.1, 0.05), vec3(0.1, 0.08, 0.05), wet);
-    pbr.roughness = mix(0.9, 0.2, wet);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.5;
-    pbr.normal = calculateNormal(h * 0.2 + wet * 0.05, 0.8);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.1)), 1.0);
-}`,
-            pbr_snow: `void main() {
-    float h = fbm(vUv * 10.0, 10.0);
-    float sparkle = step(0.99, random(vUv * 500.0));
-    PBRData pbr;
-    pbr.albedo = vec3(0.95, 0.98, 1.0);
-    pbr.roughness = 0.8 - h * 0.3;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.2;
-    pbr.normal = calculateNormal(h * 0.1, 0.4);
-    vec3 col = applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5));
-    gl_FragColor = vec4(col + sparkle * 0.5, 1.0);
-}`,
-            pbr_sand_wet: `void main() {
-    float h = fbm(vUv * 15.0, 15.0);
-    float ripple = sin(vUv.x * 20.0 + h * 5.0) * 0.5 + 0.5;
-    PBRData pbr;
-    pbr.albedo = vec3(0.6, 0.5, 0.4);
-    pbr.roughness = mix(0.8, 0.2, ripple * 0.5);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.2;
-    pbr.normal = calculateNormal(h * 0.05 + ripple * 0.1, 0.6);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.4)), 1.0);
-}`,
-            pbr_lava_crust: `void main() {
-    float n = fbm(vUv * 6.0, 6.0);
-    float fire = smoothstep(0.7, 0.9, n);
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.05), vec3(1.0, 0.2, 0.0), fire);
-    pbr.roughness = mix(0.9, 0.2, fire);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - n * 0.5;
-    pbr.normal = calculateNormal(n * 0.2, 0.8);
-    vec3 col = applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.0));
-    gl_FragColor = vec4(col + fire * vec3(2.0, 0.5, 0.0), 1.0);
-}`,
-            pbr_mossy_stone: `void main() {
-    float h = fbm(vUv * 5.0, 5.0);
-    float moss = smoothstep(0.4, 0.6, fbm(vUv * 15.0 + 1.23, 15.0));
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.4), vec3(0.1, 0.3, 0.05), moss);
-    pbr.roughness = mix(0.7, 0.9, moss);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.4;
-    pbr.normal = calculateNormal(h * 0.2 + moss * 0.1, 0.8);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.3)), 1.0);
-}`,
-            pbr_velvet: `void main() {
-    float n = fbm(vUv * 50.0, 50.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.5, 0.0, 0.05);
-    pbr.roughness = 0.9 + n * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.01, 0.2);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.8)), 1.0);
-}`,
-            pbr_denim: `void main() {
-    vec2 st = vUv * 100.0;
-    float weave = step(0.5, fract(st.x + st.y));
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.1, 0.2, 0.4), vec3(0.15, 0.25, 0.5), weave);
-    pbr.roughness = 0.8;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(weave * 0.01, 0.1);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.4)), 1.0);
-}`,
-            pbr_leather: `void main() {
-    float h = fbm(vUv * 10.0, 10.0);
-    float cracks = pow(1.0 - voronoi(vUv * 15.0), 5.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.3, 0.15, 0.1) * (1.0 - cracks * 0.5);
-    pbr.roughness = 0.6 + h * 0.3 + cracks * 0.2;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - cracks;
-    pbr.normal = calculateNormal(h * 0.05 - cracks * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            pbr_leather_worn: `void main() {
-    float h = fbm(vUv * 10.0, 10.0);
-    float cracks = pow(1.0 - voronoi(vUv * 15.0), 5.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.3, 0.15, 0.1) * (1.0 - cracks * 0.5);
-    pbr.roughness = 0.6 + h * 0.3 + cracks * 0.2;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0 - cracks;
-    pbr.normal = calculateNormal(h * 0.05 - cracks * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            pbr_plastic: `void main() {
-    float scale = 4.0;
-    float h = fbm(vUv * scale, scale);
-    PBRData pbr;
-    pbr.albedo = vec3(0.1, 0.4, 0.8);
-    pbr.roughness = 0.1 + h * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(h * 0.01, 0.2);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_plastic_matte: `void main() {
-    float n = random(vUv * 500.0);
-    PBRData pbr;
-    pbr.albedo = vec3(0.1, 0.1, 0.12);
-    pbr.roughness = 0.7 + n * 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.005, 0.1);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_gold_leaf: `void main() {
-    float h = fbm(vUv * 20.0, 20.0);
-    PBRData pbr;
-    pbr.albedo = vec3(1.0, 0.8, 0.3);
-    pbr.roughness = 0.1 + h * 0.4;
-    pbr.metallic = 1.0;
-    pbr.ambientOcclusion = 1.0 - h * 0.2;
-    pbr.normal = calculateNormal(h * 0.15, 1.2);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.6)), 1.0);
-}`,
-            pbr_diamond_encrusted: `void main() {
-    float n = random(vUv * 1000.0);
-    float spark = step(0.995, n);
-    PBRData pbr;
-    pbr.albedo = vec3(0.9);
-    pbr.roughness = 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n, 2.0);
-    vec3 col = applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(2.0));
-    gl_FragColor = vec4(col + spark * vec3(2.0), 1.0);
-}`,
-            pbr_marble_polished: `void main() {
-    float n = fbm(vUv * 3.0 + fbm(vUv * 6.0, 6.0), 3.0);
-    PBRData pbr;
-    pbr.albedo = mix(vec3(0.95), vec3(0.2, 0.2, 0.25), pow(n, 3.0));
-    pbr.roughness = 0.05;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.01, 0.1);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.6)), 1.0);
-}`,
-            pbr_ice_cracked: `void main() {
-    float v = voronoi(vUv * 5.0);
-    float cracks = smoothstep(0.0, 0.02, v);
-    PBRData pbr;
-    pbr.albedo = mix(vec3(1.0), vec3(0.7, 0.9, 1.0), cracks);
-    pbr.roughness = 0.1 + (1.0 - cracks) * 0.5;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = cracks;
-    pbr.normal = calculateNormal(cracks * 0.1, 0.5);
-    vec3 col = applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.8));
-    gl_FragColor = vec4(col, 0.8);
-}`,
-            pbr_opal: `void main() {
-    float n = fbm(vUv * 5.0, 5.0);
-    PBRData pbr;
-    vec3 iridescent = 0.8 + 0.2 * cos(6.283 * (n + vec3(0, 0.33, 0.67) + u_time * 0.1));
-    pbr.albedo = iridescent;
-    pbr.roughness = 0.1;
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(n * 0.02, 0.3);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.5)), 1.0);
-}`,
-            pbr_forged_carbon: `void main() {
-    float v = voronoi(vUv * 10.0);
-    float chunks = step(0.5, random(floor(vUv * 10.0)));
-    PBRData pbr;
-    pbr.albedo = vec3(0.05);
-    pbr.roughness = mix(0.1, 0.3, chunks);
-    pbr.metallic = 0.0;
-    pbr.ambientOcclusion = 1.0;
-    pbr.normal = calculateNormal(v * 0.05, 0.5);
-    gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.2)), 1.0);
-}`,
-            fire: `void main() {
-    float n = fbm(vUv * 4.0 - vec2(0.0, u_time * 2.0), 4.0);
-    gl_FragColor = vec4(vec3(1.0, 0.5, 0.0) * n, n);
-}`,
-            lava: `void main() {
-    float n = fbm(vUv * 6.0 - u_time * 0.2, 6.0);
-    gl_FragColor = vec4(mix(vec3(0.1), vec3(1.0, 0.2, 0.0), n), 1.0);
-}`,
-            lava_bubbles: `void main() {
-    float n = fbm(vUv * 4.0 - u_time * 0.2, 4.0);
-    float bubble = smoothstep(0.8, 0.9, fbm(vUv * 10.0 + u_time, 10.0));
-    gl_FragColor = vec4(vec3(1.0, 0.5, 0.0) * (n + bubble), 1.0);
-}`,
-            magic_portal: `void main() {
-    vec2 p = vUv - 0.5;
-    float r = length(p);
-    float a = atan(p.y, p.x);
-    float swirl = fbm(vec2(r * 5.0 - u_time, a * 2.0), 5.0);
-    gl_FragColor = vec4(vec3(0.5, 0.0, 1.0) * swirl, smoothstep(0.5, 0.0, r));
-}`,
-            potion_liquid: `void main() {
-    float n = fbm(vUv * 5.0 + u_time * 0.5, 5.0);
-    gl_FragColor = vec4(mix(vec3(1.0, 0.0, 0.5), vec3(1.0, 0.5, 0.0), n), 0.9);
-}`,
-            alien_sludge: `void main() {
-    float n = fbm(vUv * 10.0 + u_time * 0.5, 10.0);
-    gl_FragColor = vec4(mix(vec3(0.1, 0.0, 0.2), vec3(0.4, 0.8, 0.2), n), 1.0);
-}`,
-            neon_grid: `void main() {
-    vec2 st = fract(vUv * 10.0);
-    float grid = step(0.95, st.x) + step(0.95, st.y);
-    gl_FragColor = vec4(vec3(0.0, 1.0, 1.0) * grid, 1.0);
-}`,
-            energy_shield: `void main() {
-    float d = length(vUv - 0.5);
-    float pulse = sin(u_time * 2.0 - d * 10.0) * 0.5 + 0.5;
-    gl_FragColor = vec4(vec3(0.0, 0.5, 1.0) * pulse, pulse);
-}`,
-            plasma_pipe: `void main() {
-    float flow = fbm(vUv * vec2(5.0, 1.0) - vec2(u_time, 0.0), 5.0);
-    gl_FragColor = vec4(vec3(0.8, 0.2, 1.0) * flow, 1.0);
-}`,
-            thermal_view: `void main() {
-    float h = fbm(vUv * 5.0 + u_time * 0.2, 5.0);
-    gl_FragColor = vec4(0.5 + 0.5 * cos(6.283 * (h + vec3(0.0, 0.33, 0.67))), 1.0);
-}`,
-            radar_screen: `void main() {
-    float d = length(vUv - 0.5);
-    float sweep = fract((atan(vUv.y - 0.5, vUv.x - 0.5) / 6.283) - u_time * 0.2);
-    gl_FragColor = vec4(vec3(0.0, 1.0, 0.0) * sweep * step(d, 0.5), 1.0);
-}`,
-            cyber_pulse: `void main() {
-    float d = length(vUv - 0.5);
-    float pulse = fract(d * 10.0 - u_time);
-    gl_FragColor = vec4(vec3(0.0, 0.5, 1.0) * (1.0 - pulse), 1.0);
-}`,
-            cyber_glow: `void main() {
-    float n = fbm(vUv * 5.0 - u_time * 0.2, 5.0);
-    gl_FragColor = vec4(vec3(1.0, 0.0, 0.5) * n, 1.0);
-}`,
-            oil_slick: `void main() {
-    float n = fbm(vUv * 5.0 + u_time * 0.1, 5.0);
-    gl_FragColor = vec4(0.5 + 0.5 * cos(6.283 * (n + vec3(0.0, 0.33, 0.67))), 1.0);
-}`,
-            toon_clouds: `void main() {
-    float n = fbm(vUv * 3.0 + u_time * 0.1, 3.0);
-    gl_FragColor = vec4(vec3(step(0.5, n)), 1.0);
-}`,
-            rainbow_path: `void main() {
-    gl_FragColor = vec4(0.5 + 0.5 * cos(6.283 * (vUv.x + u_time * 0.2 + vec3(0.0, 0.33, 0.67))), 1.0);
-}`,
-            checkerboard: `void main() {
-    vec2 st = floor(vUv * 8.0);
-    gl_FragColor = vec4(vec3(mod(st.x + st.y, 2.0)), 1.0);
-}`,
-            candy_ground: `void main() {
-    float swirl = fract(atan(vUv.y-0.5, vUv.x-0.5)*3.0/6.283 + length(vUv-0.5)*5.0);
-    gl_FragColor = vec4(mix(vec3(1.0), vec3(1.0, 0.0, 0.5), step(0.5, swirl)), 1.0);
-}`,
-            dots: `void main() {
-    gl_FragColor = vec4(vec3(step(0.3, length(fract(vUv*10.0)-0.5))), 1.0);
-}`,
-            hexagons: `void main() {
-    gl_FragColor = vec4(vec3(voronoi(vUv * 10.0)), 1.0);
-}`,
-            stars: `void main() {
-    gl_FragColor = vec4(vec3(step(0.98, random(vUv))), 1.0);
-}`,
-            weave: `void main() {
-    vec2 st = vUv * 20.0;
-    gl_FragColor = vec4(vec3(step(0.5, fract(floor(st.x) + floor(st.y)*0.5))), 1.0);
-}`,
-            para_bricks: `uniform float u_scale; // @slider 2.0, 20.0, 10.0
-uniform float u_mortar; // @slider 0.0, 0.2, 0.05
-void main() {
-    vec2 st = vUv * u_scale * vec2(1.0, 2.0);
-    if(fract(st.y * 0.5) > 0.5) st.x += 0.5;
-    vec2 f = fract(st);
-    float brick = step(u_mortar, f.x) * step(u_mortar, f.y) * step(f.x, 1.0 - u_mortar) * step(f.y, 1.0 - u_mortar);
-    vec3 color = mix(vec3(0.8), vec3(0.7, 0.3, 0.2), brick);
-    gl_FragColor = vec4(color, 1.0);
-}`,
-            para_stripes: `uniform float u_freq; // @slider 1.0, 50.0, 10.0
-void main() {
-    gl_FragColor = vec4(vec3(step(0.5, fract(vUv.x * u_freq))), 1.0);
-}`,
-            para_grid: `uniform float u_thick; // @slider 0.01, 0.2, 0.05
-void main() {
-    vec2 st = fract(vUv * 10.0);
-    float grid = step(1.0 - u_thick, st.x) + step(1.0 - u_thick, st.y);
-    gl_FragColor = vec4(vec3(grid), 1.0);
-}`,
-            para_waves: `uniform float u_amp; // @slider 0.1, 2.0, 0.5
-void main() {
-    gl_FragColor = vec4(vec3(step(0.5, fract(vUv.y * 10.0 + sin(vUv.x * 10.0) * u_amp))), 1.0);
-}`,
-            para_circles: `uniform float u_rad; // @slider 0.1, 0.5, 0.3
-void main() {
-    gl_FragColor = vec4(vec3(step(u_rad, length(fract(vUv * 5.0) - 0.5))), 1.0);
-}`,
-            para_polka: `void main() {
-    gl_FragColor = vec4(vec3(step(0.2, length(fract(vUv * 10.0) - 0.5))), 1.0);
-}`,
-            para_checker: `void main() {
-    vec2 st = floor(vUv * 8.0);
-    gl_FragColor = vec4(vec3(mod(st.x + st.y, 2.0)), 1.0);
-}`,
-            alien_skin: `void main() {
-    gl_FragColor = vec4(mix(vec3(0.2, 0.0, 0.3), vec3(0.5, 0.2, 0.6), fbm(vUv * 10.0, 10.0)), 1.0);
-}`,
-            alien_veins: `void main() {
-    gl_FragColor = vec4(vec3(0.8, 0.0, 0.2) * step(0.9, fbm(vUv * 20.0, 20.0)), 1.0);
-}`,
-            alien_flesh: `void main() {
-    gl_FragColor = vec4(mix(vec3(0.6, 0.1, 0.2), vec3(0.9, 0.5, 0.6), noise(vUv * 10.0, 10.0)), 1.0);
-}`,
-            alien_eyes: `void main() {
-    gl_FragColor = vec4(vec3(voronoi(vUv * 5.0)), 1.0);
-}`,
-            alien_tech: `void main() {
-    gl_FragColor = vec4(vec3(0.0, 1.0, 0.5) * step(0.95, fract(voronoi(vUv * 8.0) * 10.0)), 1.0);
-}`,
-            dragon_scales: `void main() {
-    gl_FragColor = vec4(vec3(0.2, 0.5, 0.1) * voronoi(vUv * 10.0), 1.0);
-}`,
-            camo_jungle: `void main() {
-    gl_FragColor = vec4(mix(vec3(0.1, 0.3, 0.05), vec3(0.3, 0.2, 0.1), fbm(vUv * 4.0, 4.0)), 1.0);
-}`,
-            metal: `void main() {
-    float scale = 4.0;
-    vec2 st = vUv * scale;
-    float n = fbm(st * vec2(1.0, 20.0) + vec2(0.0, u_time * 0.1), scale * 20.0);
-    vec3 color = vec3(0.7, 0.72, 0.75) + n * 0.1;
-    float spec = pow(1.0 - abs(vUv.x - 0.5) * 2.0, 8.0) * 0.4;
-    color += spec;
-    gl_FragColor = vec4(color, 1.0);
-}`
-        };
-        // --- Persistence Logic ---
-        const CUSTOM_STORAGE_KEY = 'texgen_custom_textures';
+        const canvas = document.getElementById('hero-canvas');
+        const editor = document.getElementById('shader-editor');
+        const errorLog = document.getElementById('error-log');
+        const slidersContainer = document.getElementById('sliders-container');
         
-        function getCustomTextures() {
-            const data = localStorage.getItem(CUSTOM_STORAGE_KEY);
-            return data ? JSON.parse(data) : {};
+        const tg = new TexGen({ canvas });
+        let dynamicUniforms = {};
+
+        function updateSliders(code) {
+            slidersContainer.innerHTML = '';
+            const floatRegex = /uniform\s+float\s+(\w+);\s*\/\/\s*@slider\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)/g;
+            let match;
+            let hasSliders = false;
+
+            while ((match = floatRegex.exec(code)) !== null) {
+                hasSliders = true;
+                const [_, name, min, max, val] = match;
+                
+                if (dynamicUniforms[name] === undefined) {
+                    dynamicUniforms[name] = parseFloat(val);
+                }
+
+                const row = document.createElement('div');
+                row.className = 'slider-row';
+                row.innerHTML = `
+                    <label title="${name}">${name}</label>
+                    <input type="range" min="${min}" max="${max}" step="0.01" value="${dynamicUniforms[name]}">
+                    <span style="width: 40px; font-family: monospace;">${dynamicUniforms[name].toFixed(2)}</span>
+                `;
+
+                const input = row.querySelector('input');
+                const span = row.querySelector('span');
+                input.oninput = (e) => {
+                    const v = parseFloat(e.target.value);
+                    dynamicUniforms[name] = v;
+                    span.innerText = v.toFixed(2);
+                };
+
+                slidersContainer.appendChild(row);
+            }
+            slidersContainer.style.display = hasSliders ? 'flex' : 'none';
         }
 
-        function saveCustomTexture(name, code) {
-            const textures = getCustomTextures();
-            textures[name] = {
-                code: code,
-                date: new Date().toISOString()
-            };
-            localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(textures));
-        }
-
-        function deleteCustomTexture(name) {
-            const textures = getCustomTextures();
-            delete textures[name];
-            localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(textures));
-        }
-
-        // --- Compression ---
-        const TOKEN_MAP = {
-            'void main()': '§m', 'gl_FragColor': '§f', 'vec2': '§2', 'vec3': '§3', 'vec4': '§4', 'float': '§l',
-            'uniform': '§u', 'varying': '§v', 'u_time': '§t', 'vUv': '§U', 'fbm': '§b', 'noise': '§n',
-            'random': '§r', 'smoothstep': '§s', 'mix': '§x', 'fract': '§c', 'floor': '§o', 'distance': '§d', 'length': '§g'
-        };
-
-        const compressShader = (code) => {
-            let compressed = code.replace(/\/\/.*$/gm, '').replace(/\s+/g, ' ').trim();
-            for (const [token, replacement] of Object.entries(TOKEN_MAP)) {
-                compressed = compressed.split(token).join(replacement);
-            }
-            return btoa(compressed);
-        };
-
-        const decompressShader = (base64) => {
-            try {
-                let decompressed = atob(base64);
-                for (const [token, replacement] of Object.entries(TOKEN_MAP)) {
-                    decompressed = decompressed.split(replacement).join(token);
-                }
-                return decompressed;
-            } catch(e) { return null; }
-        };
-
-        // --- Shared WebGL for Baking ---
-        let _sharedGL = null;
-        let _sharedCanvas = null;
-        window._currentSeed = 0.0;
-
-        const TextureEngine = {
-            bake: (shaderCode, width = 512, height = 512, time = 0, bakeMode = 0) => {
-                if (!_sharedCanvas) {
-                    _sharedCanvas = document.createElement('canvas');
-                    _sharedGL = _sharedCanvas.getContext('webgl', { preserveDrawingBuffer: true });
-                }
-                const gl = _sharedGL;
-                if (!gl) return null;
-                gl.getExtension('OES_standard_derivatives');
-                _sharedCanvas.width = width;
-                _sharedCanvas.height = height;
-                gl.viewport(0, 0, width, height);
-                
-                const needsUtils = !shaderCode.includes('float random');
-                const vsSrc = `attribute vec2 p;varying vec2 vUvRaw;void main(){vUvRaw=p*0.5+0.5;gl_Position=vec4(p,0,1);}`;
-                                const fsSrc = `#extension GL_OES_standard_derivatives : enable
-precision mediump float;
-uniform float u_time;
-uniform vec2 u_resolution;
-uniform vec3 u_lightDir;
-uniform vec3 u_viewDir;
-uniform sampler2D u_tex0;
-uniform int u_bakeMode;
-uniform float u_seed;
-varying vec2 vUvRaw;
-#define vUv fract(vUvRaw)
-${needsUtils ? UTILS.replace('uniform float u_seed;', '') : ''}
-${shaderCode}`;
-
-                const createShader = (type, src) => {
-                    const s = gl.createShader(type);
-                    gl.shaderSource(s, src);
-                    gl.compileShader(s);
-                    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
-                    return s;
-                };
-                
-                const vs = createShader(gl.VERTEX_SHADER, vsSrc);
-                const fs = createShader(gl.FRAGMENT_SHADER, fsSrc);
-                if(!fs) return null;
-
-                const program = gl.createProgram();
-                gl.attachShader(program, vs);
-                gl.attachShader(program, fs);
-                gl.linkProgram(program);
-                gl.useProgram(program);
-                
-                const buffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-                const pLoc = gl.getAttribLocation(program, 'p');
-                if(pLoc !== -1) {
-                    gl.enableVertexAttribArray(pLoc);
-                    gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
-                }
-                
-                gl.uniform1f(gl.getUniformLocation(program, 'u_time'), time);
-                gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
-                gl.uniform3f(gl.getUniformLocation(program, 'u_lightDir'), 1.0, 1.0, 1.0);
-                gl.uniform3f(gl.getUniformLocation(program, 'u_viewDir'), 0.0, 0.0, 1.0);
-                gl.uniform1i(gl.getUniformLocation(program, 'u_bakeMode'), bakeMode);
-                gl.uniform1f(gl.getUniformLocation(program, 'u_seed'), window._currentSeed);
-
-                const texLoc = gl.getUniformLocation(program, 'u_tex0');
-                if(texLoc !== null && window._uploadedImageElement) {
-                    const t = gl.createTexture();
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, t);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, window._uploadedImageElement);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                    gl.uniform1i(texLoc, 0);
-                }
-
-                for(const key in window._dynamicUniforms) {
-                    const loc = gl.getUniformLocation(program, key);
-                    if(loc !== null) {
-                        const val = window._dynamicUniforms[key];
-                        if(typeof val === 'object' && val.isColor) gl.uniform3f(loc, val.r, val.g, val.b);
-                        else if (typeof val === 'number') gl.uniform1f(loc, val);
-                    }
-                }
-
-                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-                const dataUrl = _sharedCanvas.toDataURL();
-                gl.deleteProgram(program); gl.deleteShader(vs); gl.deleteShader(fs); gl.deleteBuffer(buffer);
-                return dataUrl;
-            }
-        };
-
-        window.onload = () => {
-            const clock = new THREE.Clock();
-            const materials = [];
-            let currentMeshType = 'cube';
-            window._dynamicUniforms = {};
-            window._uploadedImageTexture = null;
-            window._uploadedImageElement = null;
-
-            // --- Performance Profiler ---
-            let stats;
-            if (typeof Stats !== 'undefined') {
-                stats = new Stats();
-                stats.showPanel(0);
-                stats.dom.style.position = 'absolute';
-                stats.dom.style.right = '0px';
-                stats.dom.style.left = 'auto';
-                stats.dom.style.top = '0px';
-                document.body.appendChild(stats.dom);
-            }
-
-            // --- Seed Logic ---
-            const seedBtn = document.getElementById('seed-btn');
-            if(seedBtn) {
-                seedBtn.onclick = () => {
-                    window._currentSeed = Math.random() * 100.0;
-                    views.forEach(v => {
-                        if(v.uniforms.u_seed) v.uniforms.u_seed.value = window._currentSeed;
-                    });
-                    showToast("Seed Randomized!", "info");
-                };
-            }
-
-            // --- Recording Logic ---
-            let mediaRecorder;
-            let recordedChunks = [];
-            const recordBtn = document.getElementById('record-btn');
-            if(recordBtn) {
-                recordBtn.onclick = () => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                        recordBtn.innerText = '⏺ Record (WebM)';
-                        recordBtn.style.color = '#f44336';
-                        showToast("Recording Stopped, Saving...", "info");
-                    } else {
-                        const canvas = document.querySelector('#view-cube canvas');
-                        if(!canvas) return;
-                        const stream = canvas.captureStream(30);
-                        try {
-                            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                        } catch (e) { mediaRecorder = new MediaRecorder(stream); }
-                        
-                        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                        mediaRecorder.onstop = () => {
-                            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a'); a.href = url; a.download = 'texgen_capture.webm'; a.click();
-                            recordedChunks = [];
-                            URL.revokeObjectURL(url);
-                        };
-                        mediaRecorder.start();
-                        recordBtn.innerText = '⏹ Stop Recording';
-                        recordBtn.style.color = '#ffffff';
-                        recordBtn.style.backgroundColor = '#f44336';
-                        showToast("Recording Started...", "success");
-                    }
-                };
-            }
-
-            // CodeMirror Init
-            const textarea = document.getElementById('shader-code');
-            const editor = CodeMirror.fromTextArea(textarea, {
-                mode: "text/x-csrc", theme: "monokai", lineNumbers: true, matchBrackets: true, indentUnit: 4,
-                extraKeys: { "Ctrl-Enter": function(cm) { compileShader(); } }
-            });
-
-            const vertexShaderCode = `
-                varying vec2 vUvRaw;
-                uniform vec2 u_uvScale;
-                void main() {
-                    vUvRaw = uv * u_uvScale;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-
-            function createScene(containerId, is3D, uvScale) {
-                const container = document.getElementById(containerId);
-                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                renderer.setPixelRatio(window.devicePixelRatio);
-                container.appendChild(renderer.domElement);
-                const scene = new THREE.Scene();
-                if(is3D) scene.background = new THREE.Color(0x222222);
-                else {
-                    container.style.backgroundImage = "linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%)";
-                    container.style.backgroundSize = "20px 20px";
-                }
-                
-                let camera;
-                if (is3D) {
-                    camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-                    camera.position.z = 2.5;
-                    if(containerId === 'view-wall') camera.position.z = 1.2;
-                } else {
-                    const aspect = container.clientWidth / container.clientHeight;
-                    camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.1, 10);
-                    camera.position.z = 1;
-                }
-                const uniforms = {
-                    u_time: { value: 0.0 },
-                    u_resolution: { value: new THREE.Vector2(container.clientWidth, container.clientHeight) },
-                    u_uvScale: { value: new THREE.Vector2(uvScale, uvScale) },
-                    u_lightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                    u_viewDir: { value: new THREE.Vector3(0, 0, 1) },
-                    u_tex0: { value: null },
-                    u_bakeMode: { value: 0 },
-                    u_seed: { value: window._currentSeed }
-                };
-                const material = new THREE.ShaderMaterial({
-                    vertexShader: vertexShaderCode,
-                    fragmentShader: 'void main(){gl_FragColor=vec4(0,0,0,1);}',
-                    uniforms: uniforms, transparent: true, extensions: { derivatives: true }
-                });
-                materials.push(material);
-                
-                const meshes = {
-                    cube: new THREE.BoxGeometry(1, 1, 1),
-                    sphere: new THREE.SphereGeometry(0.7, 64, 64),
-                    cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1.2, 64),
-                    torus: new THREE.TorusGeometry(0.5, 0.2, 32, 100),
-                    plane: new THREE.PlaneGeometry(1.5, 1.5)
-                };
-
-                let mesh = new THREE.Mesh(containerId === 'view-cube' ? meshes.cube : (containerId === 'view-wall' ? new THREE.PlaneGeometry(2,2) : new THREE.PlaneGeometry(1.8, 1.8)), material);
-                scene.add(mesh);
-
-                const resize = () => {
-                    const w = container.clientWidth, h = container.clientHeight;
-                    renderer.setSize(w, h, false);
-                    uniforms.u_resolution.value.set(w, h);
-                    if (is3D) { camera.aspect = w / h; camera.updateProjectionMatrix(); }
-                    else { const a = w / h; camera.left = -a; camera.right = a; camera.updateProjectionMatrix(); }
-                };
-                window.addEventListener('resize', resize);
-                new ResizeObserver(resize).observe(container);
-                resize();
-                return { renderer, scene, camera, mesh, uniforms, containerId, meshes };
-            }
-
-            const views = [
-                createScene('view-2d', false, 1.0),
-                createScene('view-cube', true, 1.0),
-                createScene('view-wall', true, 3.0)
-            ];
-
-            function animate() {
-                if(stats) stats.begin();
-                requestAnimationFrame(animate);
-                const elapsedTime = clock.getElapsedTime();
-                views.forEach(v => {
-                    v.uniforms.u_time.value = elapsedTime;
-                    v.uniforms.u_lightDir.value.set(Math.sin(elapsedTime * 0.5), Math.cos(elapsedTime * 0.5), 1.0).normalize();
-                    if (v.containerId === 'view-cube') {
-                        v.mesh.rotation.x = elapsedTime * 0.3;
-                        v.mesh.rotation.y = elapsedTime * 0.5;
-                    }
-                    v.renderer.render(v.scene, v.camera);
-                });
-                if(stats) stats.end();
-            }
-            animate();
-
-            const toastContainer = document.getElementById('toast-container');
-            const errorLog = document.getElementById('error-log');
-            const compileBtn = document.getElementById('compile-btn');
-            const exampleSelect = document.getElementById('example-select');
-            const galleryBtn = document.getElementById('gallery-btn');
-            const myTexturesBtn = document.getElementById('my-textures-btn');
-            const meshSelect = document.getElementById('mesh-select');
-            const imageUpload = document.getElementById('image-upload');
-            const saveBtn = document.getElementById('save-btn');
-            const textureNameInput = document.getElementById('texture-name');
-            const exportStorageBtn = document.getElementById('export-storage-btn');
-            const importStorageBtn = document.getElementById('import-storage-btn');
-            const galleryTitle = document.getElementById('gallery-title');
-            const galleryOverlay = document.getElementById('gallery-overlay');
-            const galleryGrid = document.getElementById('gallery-grid');
-            const closeGallery = document.getElementById('close-gallery');
-            const compressBtn = document.getElementById('compress-btn');
-            const bakeBtn = document.getElementById('bake-btn');
-            const bakePbrBtn = document.getElementById('bake-pbr-btn');
-            const bakeSpritesBtn = document.getElementById('bake-sprites-btn');
-
-            function showToast(message, type = 'info') {
-                const t = document.createElement('div');
-                t.className = `toast ${type}`;
-                t.innerText = message;
-                toastContainer.appendChild(t);
-                setTimeout(() => {
-                    t.style.opacity = '0'; t.style.transform = 'translateX(100%)'; t.style.transition = 'all 0.3s ease-in';
-                    setTimeout(() => t.remove(), 300);
-                }, 3000);
-            }
-
-            meshSelect.onchange = (e) => {
-                const val = e.target.value;
-                const view = views.find(v => v.containerId === 'view-cube');
-                if(view) view.mesh.geometry = view.meshes[val];
-            };
-
-            imageUpload.onchange = (e) => {
-                const file = e.target.files[0];
-                if(file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            window._uploadedImageElement = img;
-                            window._uploadedImageTexture = new THREE.Texture(img);
-                            window._uploadedImageTexture.needsUpdate = true;
-                            materials.forEach(m => { m.uniforms.u_tex0.value = window._uploadedImageTexture; });
-                            compileShader();
-                            showToast("Image loaded!", "success");
-                        };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            function applyDynamicUniformsToMaterials() {
-                materials.forEach(m => {
-                    for(const key in window._dynamicUniforms) {
-                        const v = window._dynamicUniforms[key];
-                        if (typeof v === 'object' && v.isColor) {
-                            if (!m.uniforms[key]) m.uniforms[key] = { value: new THREE.Color() };
-                            m.uniforms[key].value.setRGB(v.r, v.g, v.b);
-                        } else {
-                            if (!m.uniforms[key]) m.uniforms[key] = { value: v };
-                            m.uniforms[key].value = v;
-                        }
-                    }
-                });
-            }
-
-            function updateSliders(code) {
-                const panel = document.getElementById('sliders-panel');
-                panel.innerHTML = '';
-                window._dynamicUniforms = {};
-                let hasSliders = false;
-                const floatRegex = /uniform\s+float\s+(\w+);\s*\/\/\s*@slider\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)/g;
-                let match;
-                while ((match = floatRegex.exec(code)) !== null) {
-                    hasSliders = true;
-                    const name = match[1], min = parseFloat(match[2]), max = parseFloat(match[3]), val = parseFloat(match[4]);
-                    window._dynamicUniforms[name] = val;
-                    const container = document.createElement('div'); container.className = 'slider-row';
-                    container.innerHTML = `<label>${name}</label><input type="range" min="${min}" max="${max}" step="0.01" value="${val}"><span>${val}</span>`;
-                    const input = container.querySelector('input'), span = container.querySelector('span');
-                    input.oninput = (e) => {
-                        const v = parseFloat(e.target.value); window._dynamicUniforms[name] = v; span.innerText = v;
-                        applyDynamicUniformsToMaterials();
-                    };
-                    panel.appendChild(container);
-                }
-                const colorRegex = /uniform\s+vec3\s+(\w+);\s*\/\/\s*@color\s+(#[0-9a-fA-F]{6})/g;
-                while ((match = colorRegex.exec(code)) !== null) {
-                    hasSliders = true;
-                    const name = match[1], hex = match[2];
-                    const color = new THREE.Color(hex);
-                    window._dynamicUniforms[name] = { isColor: true, r: color.r, g: color.g, b: color.b };
-                    const container = document.createElement('div'); container.className = 'slider-row';
-                    container.innerHTML = `<label>${name}</label><input type="color" value="${hex}">`;
-                    const input = container.querySelector('input');
-                    input.oninput = (e) => {
-                        const color = new THREE.Color(e.target.value);
-                        window._dynamicUniforms[name] = { isColor: true, r: color.r, g: color.g, b: color.b };
-                        applyDynamicUniformsToMaterials();
-                    };
-                    panel.appendChild(container);
-                }
-                panel.style.display = hasSliders ? 'flex' : 'none';
-            }
-
-                        function compileShader() {
-                const code = editor.getValue();
-                const needsUtils = !code.includes('float random');
-                const commonSource = `precision mediump float;
-uniform float u_time; uniform vec2 u_resolution; uniform vec3 u_lightDir; uniform vec3 u_viewDir;
-uniform sampler2D u_tex0; uniform int u_bakeMode; uniform float u_seed;
-varying vec2 vUvRaw;
-#define vUv fract(vUvRaw)
-${needsUtils ? UTILS.replace('uniform float u_seed;', '') : ''}
-${code}`;
-
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl');
-                if (gl) {
-                    gl.getExtension('OES_standard_derivatives');
-                    const s = gl.createShader(gl.FRAGMENT_SHADER);
-                    const rawSource = `#extension GL_OES_standard_derivatives : enable
-${commonSource}`;
-                    gl.shaderSource(s, rawSource);
-                    gl.compileShader(s);
-                    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-                        errorLog.innerText = "Error:\n" + gl.getShaderInfoLog(s);
-                        errorLog.style.color = "#f48771"; return;
-                    }
-                }
-                updateSliders(code);
-                materials.forEach(m => { m.fragmentShader = commonSource; m.needsUpdate = true; });
-                applyDynamicUniformsToMaterials();
-                errorLog.innerText = "Compiled successfully at " + new Date().toLocaleTimeString();
-                errorLog.style.color = "#89d185";
-                try { 
-                    const compressed = compressShader(code);
-                    window.location.hash = compressed;
-                    document.getElementById('compressed-size').innerText = `(${compressed.length}B)`;
-                } catch(e) {}
-            }
-
-            exampleSelect.onchange = (e) => {
-                const val = e.target.value;
-                if(val !== 'default' && shaders[val]) {
-                    textureNameInput.value = val; editor.setValue(shaders[val]);
-                    compileShader(); showToast(`Loaded ${val}`, 'success');
-                }
-            };
-
-            compileBtn.onclick = compileShader;
-            saveBtn.onclick = () => {
-                const name = textureNameInput.value.trim();
-                if(!name) { showToast("Please enter a name", "error"); return; }
-                saveCustomTexture(name, editor.getValue());
-                showToast(`Saved "${name}"`, "success");
-            };
-
-            exportStorageBtn.onclick = () => {
-                const data = localStorage.getItem(CUSTOM_STORAGE_KEY) || '{}';
-                const blob = new Blob([data], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'texgen_backup.json'; a.click();
-                showToast("Exported all", "success");
-            };
-
-            importStorageBtn.onclick = () => {
-                const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
-                input.onchange = (e) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(JSON.parse(e.target.result)));
-                            showToast("Imported successfully!", "success");
-                        } catch(err) { showToast("Import failed", "error"); }
-                    };
-                    reader.readAsText(e.target.files[0]);
-                };
-                input.click();
-            };
-
-            function openGallery(isCustom = false) {
-                galleryTitle.innerText = isCustom ? "My Custom Textures" : "Example Gallery";
-                galleryGrid.innerHTML = 'Loading...';
-                galleryOverlay.style.display = 'flex';
-                setTimeout(() => {
-                    galleryGrid.innerHTML = '';
-                    const items = isCustom ? getCustomTextures() : shaders;
-                    const keys = Object.keys(items);
-                    if(keys.length === 0) {
-                        galleryGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">No textures saved.</div>';
-                        return;
-                    }
-                    keys.forEach(name => {
-                        const shaderData = isCustom ? items[name].code : items[name];
-                        const item = document.createElement('div'); item.className = 'gallery-item';
-                        const img = document.createElement('img');
-                        try { 
-                            const thumb = TextureEngine.bake(shaderData, 256, 256, 1.0);
-                            img.src = thumb || ''; 
-                        } catch(e) { console.error("Gallery Thumb Error:", e); }
-                        const label = document.createElement('span'); label.innerText = name;
-                        item.appendChild(img); item.appendChild(label);
-                        if(isCustom) {
-                            const del = document.createElement('button');
-                            del.className = 'tool-btn danger'; del.innerText = 'Delete'; del.style.marginTop = '5px';
-                            del.onclick = (e) => {
-                                e.stopPropagation();
-                                if(confirm(`Delete "${name}"?`)) { deleteCustomTexture(name); openGallery(true); }
-                            };
-                            item.appendChild(del);
-                        }
-                        item.onclick = () => {
-                            textureNameInput.value = name; editor.setValue(shaderData);
-                            compileShader(); galleryOverlay.style.display = 'none';
-                        };
-                        galleryGrid.appendChild(item);
-                    });
-                }, 50);
-            }
-
-            galleryBtn.onclick = () => openGallery(false);
-            myTexturesBtn.onclick = () => openGallery(true);
-            closeGallery.onclick = () => galleryOverlay.style.display = 'none';
-            compressBtn.onclick = () => {
-                navigator.clipboard.writeText(compressShader(editor.getValue()));
-                showToast("Copied compressed!", "success");
-            };
+        function compile() {
+            const code = editor.value;
+            errorLog.style.display = 'none';
             
-            bakeBtn.onclick = () => {
-                const url = TextureEngine.bake(editor.getValue(), 1024, 1024, clock.getElapsedTime());
-                const a = document.createElement('a'); a.download = 'preview.png'; a.href = url; a.click();
-                showToast("Baked preview!", "success");
-            };
-
-            bakePbrBtn.onclick = async () => {
-                showToast("Baking Texture Set...", "info");
-                const zip = new JSZip();
-                const code = editor.getValue();
-                const engine = document.getElementById('engine-export-select').value;
-                const rawMaps = {};
-                for(let i=1; i<=5; i++) {
-                    const dataUrl = TextureEngine.bake(code, 1024, 1024, 0, i);
-                    if(dataUrl) {
-                        const img = new Image(); img.src = dataUrl;
-                        await new Promise(r => img.onload = r); rawMaps[i] = img;
-                    }
+            try {
+                if (tg.init(code)) {
+                    updateSliders(code);
+                } else {
+                    // TexGen init failed (logged to console, but let's show it)
+                    errorLog.innerText = "Shader Compilation Error. Check console for details.";
+                    errorLog.style.display = 'block';
                 }
-                const cvs = document.createElement('canvas'); cvs.width = 1024; cvs.height = 1024;
-                const ctx = cvs.getContext('2d', { willReadFrequently: true });
-                
-                const packChannels = (rImg, gImg, bImg, aImg, defaultR=0, defaultG=0, defaultB=0, defaultA=255) => {
-                    const outData = ctx.createImageData(1024, 1024);
-                    const getImgData = (img) => {
-                        if(!img) return null; ctx.drawImage(img, 0, 0);
-                        return ctx.getImageData(0, 0, 1024, 1024).data;
-                    };
-                    const dR = getImgData(rImg), dG = getImgData(gImg), dB = getImgData(bImg), dA = getImgData(aImg);
-                    for(let i=0; i<outData.data.length; i+=4) {
-                        outData.data[i] = dR ? dR[i] : defaultR;
-                        outData.data[i+1] = dG ? dG[i] : defaultG;
-                        outData.data[i+2] = dB ? dB[i] : defaultB;
-                        outData.data[i+3] = dA ? dA[i] : defaultA;
-                    }
-                    ctx.putImageData(outData, 0, 0);
-                    return cvs.toDataURL().replace(/^data:image\/png;base64,/, "");
-                };
+            } catch (e) {
+                errorLog.innerText = e.message;
+                errorLog.style.display = 'block';
+            }
+        }
 
-                if (engine === 'raw') {
-                    if(rawMaps[1]) zip.file('albedo.png', rawMaps[1].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[2]) zip.file('normal.png', rawMaps[2].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[3]) zip.file('roughness.png', rawMaps[3].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[4]) zip.file('metallic.png', rawMaps[4].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[5]) zip.file('ao.png', rawMaps[5].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                } else if (engine === 'unity') {
-                    if(rawMaps[1]) zip.file('BaseColor.png', rawMaps[1].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[2]) zip.file('NormalMap.png', rawMaps[2].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    const maskData = ctx.createImageData(1024, 1024);
-                    const met = rawMaps[4] ? (ctx.drawImage(rawMaps[4],0,0), ctx.getImageData(0,0,1024,1024).data) : null;
-                    const ao = rawMaps[5] ? (ctx.drawImage(rawMaps[5],0,0), ctx.getImageData(0,0,1024,1024).data) : null;
-                    const rough = rawMaps[3] ? (ctx.drawImage(rawMaps[3],0,0), ctx.getImageData(0,0,1024,1024).data) : null;
-                    for(let i=0; i<maskData.data.length; i+=4) {
-                        maskData.data[i] = met ? met[i] : 0;
-                        maskData.data[i+1] = ao ? ao[i] : 255;
-                        maskData.data[i+2] = 0;
-                        maskData.data[i+3] = rough ? (255 - rough[i]) : 128;
-                    }
-                    ctx.putImageData(maskData, 0, 0);
-                    zip.file('MaskMap.png', cvs.toDataURL().replace(/^data:image\/png;base64,/, ""), {base64: true});
-                } else if (engine === 'unreal') {
-                    if(rawMaps[1]) zip.file('BaseColor.png', rawMaps[1].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    if(rawMaps[2]) zip.file('Normal.png', rawMaps[2].src.replace(/^data:image\/png;base64,/, ""), {base64: true});
-                    const ormB64 = packChannels(rawMaps[5], rawMaps[3], rawMaps[4], null, 255, 128, 0);
-                    zip.file('ORM.png', ormB64, {base64: true});
-                }
-                zip.generateAsync({type:"blob"}).then(function(content) {
-                    const url = URL.createObjectURL(content);
-                    const a = document.createElement('a'); a.download = 'texgen_material_set.zip'; a.href = url; a.click();
-                    showToast("Downloaded Set!", "success");
-                });
-            };
+        editor.oninput = compile;
 
-            bakeSpritesBtn.onclick = () => {
-                const frames = parseInt(prompt("Number of frames to bake?", "64")) || 64;
-                const size = parseInt(prompt("Size per frame? (px)", "256")) || 256;
-                const cols = Math.ceil(Math.sqrt(frames));
-                const rows = Math.ceil(frames / cols);
-                const canvas = document.createElement('canvas'); canvas.width = cols * size; canvas.height = rows * size;
-                const ctx = canvas.getContext('2d');
-                showToast(`Baking ${frames} frames...`, "info");
-                const code = editor.getValue();
-                let i = 0;
-                function bakeNext() {
-                    if (i >= frames) {
-                        const a = document.createElement('a'); a.download = 'spritesheet.png'; a.href = canvas.toDataURL(); a.click();
-                        showToast("Spritesheet saved!", "success"); return;
-                    }
-                    const dataUrl = TextureEngine.bake(code, size, size, (i / frames) * Math.PI * 2);
-                    const img = new Image();
-                    img.onload = () => {
-                        ctx.drawImage(img, (i % cols) * size, Math.floor(i / cols) * size);
-                        i++; bakeNext();
-                    };
-                    img.src = dataUrl;
-                }
-                bakeNext();
-            };
+        function animate() {
+            tg.render(performance.now() / 1000, dynamicUniforms);
+            requestAnimationFrame(animate);
+        }
 
-            if (window.location.hash && window.location.hash.length > 1) {
-                try {
-                    const code = decompressShader(window.location.hash.substring(1));
-                    if(code) { editor.setValue(code); showToast("Loaded from URL!", "success"); }
-                    else { editor.setValue(shaders.island); }
-                } catch(e) { editor.setValue(shaders.island); }
-            } else { editor.setValue(shaders.island); }
-            compileShader();
-        };
+        // Initial compile and start
+        compile();
+        animate();
     </script>
 </body>
 </html>

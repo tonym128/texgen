@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
+    "build": "make build",
+    "test": "npm run build && vitest run",
     "start": "npx http-server -p 8080",
     "setup": "npm install"
   },
