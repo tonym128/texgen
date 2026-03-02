@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen - Marble Roller</title>
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; }
+        #game-container { position: relative; width: 800px; height: 600px; box-shadow: 0 0 20px rgba(0,0,0,1); }
+        canvas { display: block; image-rendering: pixelated; background: #111; }
+        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        #loading { position: absolute; font-size: 32px; font-weight: bold; color: #00ffcc; z-index: 100; }
+    </style>
+</head>
+<body>
+    <div id="loading">Baking Procedural Textures...</div>
+    <div id="game-container">
+        <div class="hud">SCORE: <span id="score">0</span></div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <script src="texgen.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
