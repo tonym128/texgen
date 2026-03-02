@@ -11,6 +11,7 @@ build:
 	cp texgen.js example/maze3d/
 	cp texgen.js example/texture_generator/
 	cp texgen.js example/flight_sim/
+	cp texgen.js example/card_roguelike/
 
 clean:
 	@echo "Cleaning up build artifacts..."
@@ -19,6 +20,7 @@ clean:
 	rm -f example/maze3d/texgen.js
 	rm -f example/texture_generator/texgen.js
 	rm -f example/flight_sim/texgen.js
+	rm -f example/card_roguelike/texgen.js
 
 test:
 	npm test
