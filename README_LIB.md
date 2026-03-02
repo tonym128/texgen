@@ -76,7 +76,7 @@ animate();
 If you have a compressed shader string from the TexGen editor (found in the URL hash or via "Copy Compressed"):
 
 ```javascript
-const compressed = "§m { §l scale = 4.0; ... }"; // Example compressed string
+const compressed = "$m { $l scale = 4.0; ... }"; // Example compressed string
 const rawCode = TexGen.decompress(compressed);
 tg.bake(rawCode);
 ```
@@ -114,6 +114,39 @@ You can bake specific PBR maps by passing `u_bakeMode` in the uniforms:
 ```javascript
 const albedoMap = tg.bake(pbrShader, { uniforms: { u_bakeMode: 1 } });
 const normalMap = tg.bake(pbrShader, { uniforms: { u_bakeMode: 2 } });
+```
+
+## Built-in GLSL Utilities
+
+When you write a shader for TexGen, it automatically injects a powerful suite of procedural functions into the GLSL environment.
+
+### Variables & Uniforms
+- `vUv` (vec2): The normalized pixel coordinates (0.0 to 1.0).
+- `u_time` (float): The current elapsed time in seconds (for animation).
+- `u_resolution` (vec2): The width and height of the canvas.
+- `u_seed` (float): The random seed generated or passed during instantiation.
+
+### Math & Noise Functions
+- `float random(vec2 st)`: Returns a pseudo-random float between 0.0 and 1.0 based on the seed.
+- `float noise(vec2 st, float scale)`: Generates seamless value noise.
+- `float fbm(vec2 st, float octaves)`: Fractional Brownian Motion for natural, cloudy textures.
+- `float voronoi(vec2 x)`: Cellular noise (Worley) perfect for water, crystals, or organic tissue.
+
+### Shapes & Geometry (SDFs)
+- `float sdCircle(vec2 p, float r)`: Signed distance field for a circle.
+- `float sdBox(vec2 p, vec2 b)`: Signed distance field for a box.
+
+### Physically Based Rendering (PBR)
+To use PBR lighting, define a `PBRData` struct and pass it to the lighting function:
+```glsl
+PBRData pbr;
+pbr.albedo = vec3(0.8, 0.2, 0.2); // Base Color
+pbr.roughness = 0.5;
+pbr.metallic = 0.1;
+pbr.ambientOcclusion = 1.0;
+pbr.normal = calculateNormal(heightMapValue, 1.0);
+
+gl_FragColor = vec4(applyPBRLighting(pbr, u_lightDir, u_viewDir, vec3(1.0)), 1.0);
 ```
 
 ## API Reference

@@ -119,8 +119,18 @@ const TOKEN_MAP = {
 
 class TexGen {
     constructor(options = {}) {
-        this.canvas = options.canvas || document.createElement('canvas');
-        this.gl = this.canvas.getContext('webgl', { preserveDrawingBuffer: true });
+        if (options.canvas) {
+            this.canvas = options.canvas;
+        } else if (typeof document !== 'undefined') {
+            this.canvas = document.createElement('canvas');
+        } else if (typeof OffscreenCanvas !== 'undefined') {
+            this.canvas = new OffscreenCanvas(options.width || 512, options.height || 512);
+        } else {
+            console.warn("TexGen: No canvas environment detected. Pass a mock canvas or use headless-gl.");
+            this.canvas = {};
+        }
+
+        this.gl = this.canvas.getContext ? this.canvas.getContext('webgl', { preserveDrawingBuffer: true }) : null;
         this.ext = null;
         if (this.gl) {
             this.ext = this.gl.getExtension('OES_standard_derivatives');
@@ -136,7 +146,15 @@ class TexGen {
 
     static decompress(base64) {
         try {
-            let decompressed = atob(base64);
+            let decompressed;
+            if (typeof atob === 'function') {
+                decompressed = atob(base64);
+            } else if (typeof Buffer !== 'undefined') {
+                decompressed = Buffer.from(base64, 'base64').toString('utf8');
+            } else {
+                return null;
+            }
+            
             for (const [token, replacement] of Object.entries(TOKEN_MAP)) {
                 decompressed = decompressed.split(replacement).join(token);
             }
@@ -272,3 +290,6 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     window.TexGen = TexGen;
 }
+
+// ESM Support
+export default TexGen;

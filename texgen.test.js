@@ -82,7 +82,7 @@ describe('TexGen Library', () => {
             // Using the actual TOKEN_MAP from texgen.js
             const original = 'void main() { gl_FragColor = vec4(1.0); }';
             // Mocking a simple compression
-            const compressed = btoa('§m { §f = §4(1.0); }'); 
+            const compressed = btoa('$m { $f = $4(1.0); }'); 
             const decompressed = TexGen.decompress(compressed);
             expect(decompressed).toContain('void main()');
             expect(decompressed).toContain('gl_FragColor');

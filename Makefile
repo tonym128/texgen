@@ -13,6 +13,8 @@ build:
 	cp texgen.js example/flight_sim/
 	cp texgen.js example/card_roguelike/
 	cp texgen.js example/solitaire/
+	cp texgen.js example/typescript_gallery/
+	cp texgen.d.ts example/typescript_gallery/
 
 clean:
 	@echo "Cleaning up build artifacts..."
@@ -23,6 +25,8 @@ clean:
 	rm -f example/flight_sim/texgen.js
 	rm -f example/card_roguelike/texgen.js
 	rm -f example/solitaire/texgen.js
+	rm -f example/typescript_gallery/texgen.js
+	rm -f example/typescript_gallery/texgen.d.ts
 
 test:
 	npm test
