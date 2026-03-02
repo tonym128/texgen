@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen - Flight Sim</title>
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; }
+        #webgl-canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; font-weight: bold; color: #ffcc00; z-index: 100; text-shadow: 0 0 10px #ffcc00; animation: pulse 1s infinite alternate; text-align: center; }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+        
+        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
+        .instructions { position: absolute; bottom: 20px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
+        
+        #tod-slider { position: absolute; top: 20px; right: 20px; width: 200px; z-index: 10; }
+        .tod-label { position: absolute; top: 50px; right: 20px; font-size: 14px; text-shadow: 1px 1px 0 #000; z-index: 10; }
+    </style>
+    <!-- Include Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="loading">
+        Decompressing Procedural Textures...<br>
+        <span style="font-size: 16px; color: #aaa; font-weight: normal;" id="compression-status"></span>
+    </div>
+    
+    <div class="hud">ENDLESS FLIGHT</div>
+    <div class="instructions">
+        <strong>WASD / Arrows:</strong> Steer Plane<br>
+        <strong>Textures:</strong> Realtime Sky & Seamless Baked Terrain
+    </div>
+    
+    <input type="range" id="tod-slider" min="0" max="1" step="0.001" value="0.5">
+    <div class="tod-label">Time of Day</div>
+
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Include TexGen library -->
+    <script src="texgen.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
