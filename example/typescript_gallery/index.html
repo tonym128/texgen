@@ -53,10 +53,19 @@
     <header style="margin-bottom: 40px;">
       <h1>TexGen <span style="font-weight: 300;">TypeScript Gallery</span></h1>
       <p>Demonstrating type-safe procedural generation, compression, and baking.</p>
+      <div id="protocol-warning" style="display: none; background: #f48771; color: #000; padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: bold;">
+        ⚠️ Browser Security Error: ES Modules cannot be loaded via 'file://'. <br>
+        Please run this gallery using a local server (e.g., 'npx http-server' or 'npm start').
+      </div>
     </header>
     <div id="app" class="grid"></div>
 
-    <!-- Live Edit Modal -->
+    <script>
+      if (window.location.protocol === 'file:') {
+        document.getElementById('protocol-warning').style.display = 'block';
+      }
+    </script>
+    <script type="module" src="./src/main.js"></script>
     <div id="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 40px;">
       <div style="background: var(--card); border: 1px solid #334155; border-radius: 16px; width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         <div style="padding: 30px; border-right: 1px solid #334155; display: flex; flex-direction: column;">

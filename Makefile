@@ -17,6 +17,9 @@ build:
 	cp texgen.js example/solitaire/texgen.js
 	cp texgen.mjs example/typescript_gallery/texgen.mjs
 	cp texgen.d.ts example/typescript_gallery/
+	@echo "Generating JS fallback for TypeScript Gallery..."
+	# Compile main.ts to main.js using the local tsc if available
+	-cd example/typescript_gallery && ./node_modules/.bin/tsc src/main.ts --target esnext --module esnext --moduleResolution node --noEmit false --skipLibCheck true --outDir src/ && rm -f src/texgen.mjs.js
 
 clean:
 	@echo "Cleaning up build artifacts..."
@@ -29,6 +32,7 @@ clean:
 	rm -f example/solitaire/texgen.js
 	rm -f example/typescript_gallery/texgen.mjs
 	rm -f example/typescript_gallery/texgen.d.ts
+	rm -f example/typescript_gallery/src/main.js
 
 test:
 	npm test
