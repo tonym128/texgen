@@ -41,16 +41,16 @@ class FlightSim {
             });
             
             status.innerText = "Baking Terrain Textures...";
-            const albedoUrl = tgBaker.bake(terrainSrc, { width: 1024, height: 1024, uniforms: { u_bakeMode: 1 } });
+            const albedoUrl = tgBaker.bake(terrainSrc, { width: 512, height: 512, uniforms: { u_bakeMode: 1 } });
             const albedoImg = await loadImg(albedoUrl);
-            const heightUrl = tgBaker.bake(terrainSrc, { width: 1024, height: 1024, uniforms: { u_bakeMode: 2 } });
+            const heightUrl = tgBaker.bake(terrainSrc, { width: 512, height: 512, uniforms: { u_bakeMode: 2 } });
             const heightImg = await loadImg(heightUrl);
 
             this.heightCanvas = document.createElement('canvas');
-            this.heightCanvas.width = 1024; this.heightCanvas.height = 1024;
+            this.heightCanvas.width = 512; this.heightCanvas.height = 512;
             this.heightCtx = this.heightCanvas.getContext('2d');
             this.heightCtx.drawImage(heightImg, 0, 0);
-            this.heightData = this.heightCtx.getImageData(0, 0, 1024, 1024).data;
+            this.heightData = this.heightCtx.getImageData(0, 0, 512, 512).data;
 
             status.innerText = "Baking Airplane Textures...";
             this.woodImg = await loadImg(tgBaker.bake(woodSrc, { width: 256, height: 256 }));
@@ -191,9 +191,9 @@ class FlightSim {
     }
 
     getTerrainHeight(uvX, uvY) {
-        const x = Math.floor(((uvX % 1 + 1) % 1) * 1024);
-        const y = Math.floor(((uvY % 1 + 1) % 1) * 1024);
-        const idx = (y * 1024 + x) * 4;
+        const x = Math.floor(((uvX % 1 + 1) % 1) * 512);
+        const y = Math.floor(((uvY % 1 + 1) % 1) * 512);
+        const idx = (y * 512 + x) * 4;
         const val = this.heightData[idx] / 255;
         return val * this.displacementScale - this.displacementBias;
     }
@@ -214,7 +214,7 @@ class FlightSim {
         this.planeBank = Math.max(-0.5, Math.min(0.5, this.planeBank));
         this.planeGroup.rotation.z = this.planeBank;
 
-        let verticalMove = 0;
+        let verticalMove = -2 * dt; // Slow natural descent (gravity)
         if (this.input.up) verticalMove = 15 * dt;
         if (this.input.down) verticalMove = -15 * dt;
         this.planeGroup.position.y += verticalMove;
@@ -224,9 +224,17 @@ class FlightSim {
         this.terrainMat.displacementMap.offset.y += scrollSpeed;
 
         const groundHeight = this.getTerrainHeight(0.5 + this.terrainMat.map.offset.x, 0.5 + this.terrainMat.map.offset.y);
-        const minHeight = groundHeight + 15;
-        if (this.planeGroup.position.y < minHeight) {
-            this.planeGroup.position.y += (minHeight - this.planeGroup.position.y) * 0.1;
+        const targetMinHeight = groundHeight + 20; // Desired cruising floor
+        const hardClipHeight = groundHeight + 10;  // Absolute minimum to avoid visible clipping
+        
+        // 1. Gradual lift when land is rising
+        if (this.planeGroup.position.y < targetMinHeight) {
+            this.planeGroup.position.y += (targetMinHeight - this.planeGroup.position.y) * 0.05;
+        }
+
+        // 2. Immediate push-up if about to clip land bumps
+        if (this.planeGroup.position.y < hardClipHeight) {
+            this.planeGroup.position.y = hardClipHeight;
         }
         this.planeGroup.position.y = Math.min(400, this.planeGroup.position.y);
 
