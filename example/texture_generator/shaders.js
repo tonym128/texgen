@@ -114,10 +114,10 @@ vec3 applyPBRLighting(PBRData pbr, vec3 lightDir, vec3 viewDir, vec3 lightCol) {
 `;
 
 export const TOKEN_MAP = {
-            'void main()': '§m', 'gl_FragColor': '§f', 'vec2': '§2', 'vec3': '§3', 'vec4': '§4', 'float': '§l',
-            'uniform': '§u', 'varying': '§v', 'u_time': '§t', 'vUv': '§U', 'fbm': '§b', 'noise': '§n',
-            'random': '§r', 'smoothstep': '§s', 'mix': '§x', 'fract': '§c', 'floor': '§o', 'distance': '§d', 'length': '§g'
-        };;
+    'void main()': '$m', 'gl_FragColor': '$f', 'vec2': '$2', 'vec3': '$3', 'vec4': '$4', 'float': '$l',
+    'uniform': '$u', 'varying': '$v', 'u_time': '$t', 'vUv': '$U', 'fbm': '$b', 'noise': '$n',
+    'random': '$r', 'smoothstep': '$s', 'mix': '$x', 'fract': '$c', 'floor': '$o', 'distance': '$d', 'length': '$g'
+};
 
 export const compressShader = (code) => {
     let compressed = code.replace(/\/\/.*$/gm, '').replace(/\s+/g, ' ').trim();
