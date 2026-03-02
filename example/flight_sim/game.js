@@ -2,11 +2,8 @@
 
 // The shaders are compressed using '$' tokens to ensure single-byte ASCII safety during Base64 transport.
 const COMPRESSED_SHADERS = {
-    // Generates heightmap (u_bakeMode=2) and albedo map (u_bakeMode=1)
-    terrain: "JG0geyAkMiBzdCA9ICRVICogNC4wOyAkbCBuID0gJGIoc3QsIDQuMCk7ICRsIGggPSAkcygwLjIsIDAuOCwgbik7ICQzIGRlZXBXYXRlciA9ICQzKDAuMCwgMC4xLCAwLjMpOyAkMyBzaGFsbG93V2F0ZXIgPSAkMygwLjEsIDAuNCwgMC42KTsgJDMgc2FuZCA9ICQzKDAuOCwgMC43LCAwLjUpOyAkMyBncmFzcyA9ICQzKDAuMiwgMC41LCAwLjEpOyAkMyByb2NrID0gJDMoMC40LCAwLjM1LCAwLjMpOyAkMyBzbm93ID0gJDMoMC45LCAwLjk1LCAxLjApOyAkMyBjb2wgPSAkeChkZWVwV2F0ZXIsIHNoYWxsb3dXYXRlciwgJHMoMC4wLCAwLjMsIGgpKTsgY29sID0gJHgoY29sLCBzYW5kLCAkcygwLjMsIDAuMzUsIGgpKTsgY29sID0gJHgoY29sLCBncmFzcywgJHMoMC4zNSwgMC41LCBoKSk7IGNvbCA9ICR4KGNvbCwgcm9jaywgJHMoMC42LCAwLjc1LCBoKSk7IGNvbCA9ICR4KGNvbCwgc25vdywgJHMoMC44LCAwLjksIGgpKTsgaWYgKHVfYmFrZU1vZGUgPT0gMikgeyAkZiA9ICQ0KCQzKG1heCgwLjIsIGgpKSwgMS4wKTsgfSBlbHNlIHsgJGYgPSAkNChjb2wsIDEuMCk7IH0gfQ==",
-    // Animated sky with day/night cycle, sun, moon, stars, and god rays
-    sky: "JHUgJGwgdV90b2Q7ICR1ICRsIHVfc3VuWTsgJG0geyAkbCB0ID0gJHQgKiAwLjA1OyAkbCBjMSA9ICRiKCRVICogMi4wICsgJDIodCwgdCAqIDAuMyksIDIuMCk7ICRsIGMyID0gJGIoJFUgKiA1LjAgLSAkMih0ICogMS41LCAwLjApLCA1LjApOyAkbCBjbG91ZHMgPSAkcygwLjQsIDAuNywgYzEgKiBjMiArIGMxICogMC41KTsgJDMgbmlnaHQgPSAkMygwLjAxLCAwLjAyLCAwLjEpOyAkMyB0d2lsaWdodCA9ICQzKDAuMiwgMC4xLCAwLjMpOyAkMyBzdW5zZXQgPSAkMygxLjAsIDAuNCwgMC4xKTsgJDMgZGF5ID0gJDMoMC40LCAwLjcsIDEuMCk7ICQzIHNreUNvbCA9ICR4KG5pZ2h0LCB0d2lsaWdodCwgJHMoLTAuNSwgLTAuMSwgdV9zdW5ZKSk7IHNreUNvbCA9ICR4KHNreUNvbCwgc3Vuc2V0LCAkcygtMC4xLCAwLjEsIHVfc3VuWSkpOyBza3lDb2wgPSAkeChza3lDb2wsIGRheSwgJHMoMC4xLCAwLjUsIHVfc3VuWSkpOyAkbCBzdW5BbmdsZSA9IHVfdG9kICogNi4yODMgLSAxLjU3OyAkMiBzdW5Qb3MgPSAkMigwLjUgKyBjb3Moc3VuQW5nbGUpKjAuNCwgMC41ICsgc2luKHN1bkFuZ2xlKSowLjQpOyAkMiBtb29uUG9zID0gJDIoMC41IC0gY29zKHN1bkFuZ2xlKSowLjQsIDAuNSAtIHNpbihzdW5BbmdsZSkqMC40KTsgJGwgc3VuID0gJHMoMC4wNCwgMC4wMywgJGcoJFUgLSBzdW5Qb3MpKTsgJGwgc3VuR2xvdyA9ICRzKDAuNCwgMC4wLCAkZygkVSAtIHN1blBvcykpOyAkbCBtb29uID0gJHMoMC4wMywgMC4wMjUsICRnKCRVIC0gbW9vblBvcykpOyAkbCByYXlzID0gMC4wOyBpZiAodV9zdW5ZID4gMC4wKSB7ICQyIHJheVN0ID0gJFUgLSBzdW5Qb3M7ICRsIHIgPSAkZyhyYXlTdCk7ICRsIGEgPSBhdGFuKHJheVN0LnksIHJheVN0LngpOyByYXlzID0gcG93KGFicyhzaW4oYSAqIDEyLjAgKyB0ICogNS4wKSksIDEwLjApICogJHMoMC44LCAwLjAsIHIpICogdV9zdW5ZOyB9ICQyIHN0YXJVdiA9ICRVICsgJDIodV90b2QgKiAwLjIsIDAuMCk7ICRsIHN0YXJzID0gc3RlcCgwLjk5OCwgJHIoc3RhclV2KSk7IHN0YXJzICo9ICgwLjcgKyAwLjMgKiBzaW4oJHQgKiAyLjAgKyAkcigkVSkgKiA2Mi44KSk7IHN0YXJzICo9ICRzKDAuMSwgLTAuMywgdV9zdW5ZKTsgJDMgZmluYWxDb2wgPSAkeChza3lDb2wsICQzKDEuMCksIGNsb3VkcyAqIDAuNSAqICRzKC0wLjEsIDAuMiwgdV9zdW5ZKSk7IGZpbmFsQ29sICs9IHN1biAqICQzKDEuMCwgMS4wLCAwLjgpICsgc3VuR2xvdyAqIHN1bnNldCAqIDAuNSAqIG1heCgwLjAsIHVfc3VuWSk7IGZpbmFsQ29sICs9IG1vb24gKiAkMygwLjgsIDAuOSwgMS4wKSArIHN0YXJzOyBmaW5hbENvbCArPSByYXlzICogJDMoMS4wLCAwLjgsIDAuNCkgKiAwLjU7ICRmID0gJDQoZmluYWxDb2wsIDEuMCk7IH0=",
-    // New textures for the plane
+    terrain: "JG0geyAkMiBzdCA9ICRVICogNC4wOyAkbCBuID0gJGIoc3QsIDQuMCk7ICRsIGggPSAkcygwLjIsIDAuOCwgbik7ICQzIGRlZXBXYXRlciA9ICQzKDAuMCwgMC4xLCAwLjMpOyAkMyBzaGFsbG93V2F0ZXIgPSAkMygwLjEsIDAuNCwgMC42KTsgJDMgc2FuZCA9ICQzKDAuOCwgMC43LCAwLjUpOyAkMyBncmFzcyA9ICQzKDAuMiwgMC40LCAwLjEpOyAkMyByb2NrID0gJDMoMC40LCAwLjM1LCAwLjMpOyAkMyBzbm93ID0gJDMoMC45LCAwLjk1LCAxLjApOyAkMyBjb2wgPSAkeChkZWVwV2F0ZXIsIHNoYWxsb3dXYXRlciwgJHMoMC4wLCAwLjMsIGgpKTsgY29sID0gJHgoY29sLCBzYW5kLCAkcygwLjMsIDAuMzUsIGgpKTsgY29sID0gJHgoY29sLCBncmFzcywgJHMoMC4zNSwgMC41LCBoKSk7IGNvbCA9ICR4KGNvbCwgcm9jaywgJHMoMC42LCAwLjc1LCBoKSk7IGNvbCA9ICR4KGNvbCwgc25vdywgJHMoMC44LCAwLjksIGgpKTsgaWYgKHVfYmFrZU1vZGUgPT0gMikgeyAkZiA9ICQ0KCQzKG1heCgwLjIsIGgpKSwgMS4wKTsgfSBlbHNlIHsgJGYgPSAkNChjb2wsIDEuMCk7IH0gfQ==",
+    sky: "JHUgJGwgdV90b2Q7ICR1ICRsIHVfc3VuWTsgJG0geyAkbCB0ID0gJHQgKiAwLjA1OyAkbCBjMSA9ICRiKCRVICogMi4wICsgJDIodCwgdCAqIDAuMyksIDIuMCk7ICRsIGMyID0gJGIoJFUgKiA1LjAgLSAkMih0ICogMS41LCAwLjApLCA1LjApOyAkbCBjbG91ZHMgPSAkcygwLjQsIDAuNywgYzEgKiBjMiArIGMxICogMC41KTsgJDMgbmlnaHQgPSAkMygwLjAxLCAwLjAxLCAwLjA1KTsgJDMgdHdpbGlnaHQgPSAkMygwLjIsIDAuMSwgMC4zKTsgJDMgc3Vuc2V0ID0gJDMoMS4wLCAwLjQsIDAuMSk7ICQzIGRheSA9ICQzKDAuNCwgMC43LCAxLjApOyAkMyBza3lDb2wgPSAkeChuaWdodCwgdHdpbGlnaHQsICRzKC0wLjUsIC0wLjEsIHVfc3VuWSkpOyBza3lDb2wgPSAkeChza3lDb2wsIHN1bnNldCwgJHMoLTAuMSwgMC4xLCB1X3N1blkpKTsgc2t5Q29sID0gJHgoc2t5Q29sLCBkYXksICRzKDAuMSwgMC41LCB1X3N1blkpKTsgJGwgc3VuQW5nbGUgPSB1X3RvZCAqIDYuMjgzIC0gMS41NzsgJDIgc3VuUG9zID0gJDIoMC41ICsgY29zKHN1bkFuZ2xlKSowLjQsIDAuNSArIHNpbihzdW5BbmdsZSkqMC40KTsgJDIgbW9vblBvcyA9ICQyKDAuNSAtIGNvcyhzdW5BbmdsZSkqMC40LCAwLjUgLSBzaW4oc3VuQW5nbGUpKjAuNCk7ICRsIHN1biA9ICRzKDAuMDQsIDAuMDMsICRnKCRVIC0gc3VuUG9zKSk7ICRsIHN1bkdsb3cgPSAkcygwLjQsIDAuMCwgJGcoJFUgLSBzdW5Qb3MpKTsgJGwgbW9vbiA9ICRzKDAuMDgsIDAuMDcsICRnKCRVIC0gbW9vblBvcykpOyAkbCBtb29uR2xvdyA9ICRzKDAuMjUsIDAuMCwgJGcoJFUgLSBtb29uUG9zKSk7ICRsIHJheXMgPSAwLjA7IGlmICh1X3N1blkgPiAwLjApIHsgJDIgcmF5U3QgPSAkVSAtIHN1blBvczsgJGwgciA9ICRnKHJheVN0KTsgJGwgYSA9IGF0YW4ocmF5U3QueSwgcmF5U3QueCk7IHJheXMgPSBwb3coYWJzKHNpbihhICogMTIuMCArIHQgKiA1LjApKSwgMTAuMCkgKiAkcygwLjgsIDAuMCwgcikgKiB1X3N1blk7IH0gJDIgc3RhclV2ID0gJFUgKyAkMih1X3RvZCAqIDAuMiwgMC4wKTsgJGwgc3RhcnMgPSBzdGVwKDAuOTk4LCAkcihzdGFyVXYpKTsgc3RhcnMgKj0gKDAuNyArIDAuMyAqIHNpbigkdCAqIDIuMCArICRyKCRVKSAqIDYyLjgpKTsgc3RhcnMgKj0gJHMoMC4xLCAtMC4zLCB1X3N1blkpOyAkMyBmaW5hbENvbCA9ICR4KHNreUNvbCwgJDMoMS4wKSwgY2xvdWRzICogMC41ICogJHMoLTAuMSwgMC4yLCB1X3N1blkpKTsgZmluYWxDb2wgKz0gc3VuICogJDMoMS4wLCAxLjAsIDAuOCkgKyBzdW5HbG93ICogc3Vuc2V0ICogMC41ICogbWF4KDAuMCwgdV9zdW5ZKTsgZmluYWxDb2wgKz0gbW9vbiAqICQzKDAuOSwgMC45NSwgMS4wKSArIG1vb25HbG93ICogJDMoMC4yLCAwLjQsIDAuOCkgKiAwLjMgKiAkcygwLjAsIC0wLjIsIHVfc3VuWSk7IGZpbmFsQ29sICs9IHN0YXJzOyBmaW5hbENvbCArPSByYXlzICogJDMoMS4wLCAwLjgsIDAuNCkgKiAwLjU7ICRmID0gJDQoZmluYWxDb2wsIDEuMCk7IH0=",
     wood: "JG0geyAkbCBuID0gJGIoJFUgKiAkMigxLjAsIDEwLjApLCAxMC4wKTsgJDMgY29sb3IgPSAkeCgkMygwLjQsIDAuMiwgMC4xKSwgJDMoMC42LCAwLjQsIDAuMiksIG4pOyAkbCBncmFpbiA9ICRjKCRVLnkgKiAxMC4wKTsgY29sb3IgKj0gMC45ICsgMC4yICogc3RlcCgwLjEsIGdyYWluKTsgJGYgPSAkNChjb2xvciwgMS4wKTsgfQ==",
     steel: "JG0geyAkbCBuID0gJGIoJFUgKiAyMC4wLCAyMC4wKTsgJDMgY29sb3IgPSAkMygwLjYsIDAuNjIsIDAuNjUpICsgbiAqIDAuMTsgJGYgPSAkNChjb2xvciwgMS4wKTsgfQ==",
     metal: "JG0geyAkbCBuID0gJGIoJFUgKiA1LjAsIDUuMCk7ICQzIGNvbG9yID0gJDMoMC44LCAwLjgsIDAuODUpICsgbiAqIDAuMjsgJGYgPSAkNChjb2xvciwgMS4wKTsgfQ=="
@@ -63,7 +60,7 @@ class FlightSim {
             status.innerText = "Initializing Realtime Sky...";
             this.skyTg = new TexGen({ width: 512, height: 512 });
             this.skyTg.init(skySrc);
-            this.skyTg.render(0, { u_tod: 0.25, u_sunY: -1 });
+            this.skyTg.render(0, { u_tod: 0.5, u_sunY: 1 }); // Start at Midday
 
             document.getElementById('loading').style.display = 'none';
             this.initThreeJS(albedoImg, heightImg);
@@ -225,12 +222,14 @@ class FlightSim {
         todSliderVal = (todSliderVal + (1.0 / 180.0) * dt) % 1.0;
         this.todSlider.value = todSliderVal;
 
-        // Map slider (0=Mid, 0.5=Day, 1=Mid) to internal TOD (0.25=Mid, 0.5=SunPeak, 0.75=Mid)
-        const internalTod = (todSliderVal + 0.25) % 1.0;
+        // Correct Mapping: 
+        // Slider 0.0 -> Midnight (sunY = -1, u_tod = 0.0)
+        // Slider 0.5 -> Midday (sunY = 1, u_tod = 0.5)
+        // Slider 1.0 -> Midnight (sunY = -1, u_tod = 1.0)
         const sunY = Math.sin(todSliderVal * Math.PI * 2 - Math.PI/2);
         const sunX = Math.cos(todSliderVal * Math.PI * 2 - Math.PI/2);
 
-        this.skyTg.render(performance.now() / 1000, { u_tod: internalTod, u_sunY: sunY });
+        this.skyTg.render(performance.now() / 1000, { u_tod: todSliderVal, u_sunY: sunY });
         this.skyTex.needsUpdate = true;
 
         const cameraOffset = new THREE.Vector3(0, 20, 60);

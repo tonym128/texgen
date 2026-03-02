@@ -1,7 +1,5 @@
 /**
  * TexGen Compression Script - Flight Sim Edition
- * 
- * Use this script to regenerate the compressed Base64 strings for game.js
  */
 
 const TOKEN_MAP = {
@@ -47,7 +45,7 @@ void main() {
     float c1 = fbm(vUv * 2.0 + vec2(t, t * 0.3), 2.0);
     float c2 = fbm(vUv * 5.0 - vec2(t * 1.5, 0.0), 5.0);
     float clouds = smoothstep(0.4, 0.7, c1 * c2 + c1 * 0.5);
-    vec3 night = vec3(0.01, 0.02, 0.1);
+    vec3 night = vec3(0.01, 0.01, 0.05);
     vec3 twilight = vec3(0.2, 0.1, 0.3);
     vec3 sunset = vec3(1.0, 0.4, 0.1);
     vec3 day = vec3(0.4, 0.7, 1.0);
@@ -59,7 +57,8 @@ void main() {
     vec2 moonPos = vec2(0.5 - cos(sunAngle)*0.4, 0.5 - sin(sunAngle)*0.4);
     float sun = smoothstep(0.04, 0.03, length(vUv - sunPos));
     float sunGlow = smoothstep(0.4, 0.0, length(vUv - sunPos));
-    float moon = smoothstep(0.03, 0.025, length(vUv - moonPos));
+    float moon = smoothstep(0.08, 0.07, length(vUv - moonPos));
+    float moonGlow = smoothstep(0.25, 0.0, length(vUv - moonPos));
     float rays = 0.0;
     if (u_sunY > 0.0) {
         vec2 raySt = vUv - sunPos;
@@ -73,7 +72,8 @@ void main() {
     stars *= smoothstep(0.1, -0.3, u_sunY);
     vec3 finalCol = mix(skyCol, vec3(1.0), clouds * 0.5 * smoothstep(-0.1, 0.2, u_sunY));
     finalCol += sun * vec3(1.0, 1.0, 0.8) + sunGlow * sunset * 0.5 * max(0.0, u_sunY);
-    finalCol += moon * vec3(0.8, 0.9, 1.0) + stars;
+    finalCol += moon * vec3(0.9, 0.95, 1.0) + moonGlow * vec3(0.2, 0.4, 0.8) * 0.3 * smoothstep(0.0, -0.2, u_sunY);
+    finalCol += stars;
     finalCol += rays * vec3(1.0, 0.8, 0.4) * 0.5;
     gl_FragColor = vec4(finalCol, 1.0);
 }`;
