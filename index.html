@@ -384,81 +384,80 @@ void main() {
         </footer>
     </div>
 
+    <!-- Include TexGen as a standard script to avoid CORS issues on file:// -->
     <script src="texgen.js"></script>
     <script>
-        // Hero Editor Logic
-        const canvas = document.getElementById('hero-canvas');
-        const editor = document.getElementById('shader-editor');
-        const errorLog = document.getElementById('error-log');
-        const slidersContainer = document.getElementById('sliders-container');
-        const tg = new TexGen({ canvas });
-        let dynamicUniforms = {};
+        // Use standard window load
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('hero-canvas');
+            const editor = document.getElementById('shader-editor');
+            const errorLog = document.getElementById('error-log');
+            const slidersContainer = document.getElementById('sliders-container');
+            
+            const tg = new TexGen({ canvas });
+            let dynamicUniforms = {};
 
-        // Sky Demo Logic
-        const skyCanvas = document.getElementById('sky-canvas');
-        const skyTodInput = document.getElementById('sky-tod');
-        const payloadDisplay = document.getElementById('payload-display');
-        const skyTg = new TexGen({ canvas: skyCanvas });
-        
-        const SKY_PAYLOAD = "JHUgJGwgdV90b2Q7ICR1ICRsIHVfc3VuWTsgJG0geyAkbCB0ID0gJHQgKiAwLjA1OyAkbCBjMSA9ICRiKCRVICogMi4wICsgJDIodCwgdCAqIDAuMyksIDIuMCk7ICRsIGMyID0gJGIoJFUgKiA1LjAgLSAkMih0ICogMS41LCAwLjApLCA1LjApOyAkbCBjbG91ZHMgPSAkcygwLjQsIDAuNywgYzEgKiBjMiArIGMxICogMC41KTsgJDMgbmlnaHQgPSAkMygwLjAxLCAwLjAxLCAwLjA1KTsgJDMgdHdpbGlnaHQgPSAkMygwLjIsIDAuMSwgMC4zKTsgJDMgc3Vuc2V0ID0gJDMoMS4wLCAwLjQsIDAuMSk7ICQzIGRheSA9ICQzKDAuNCwgMC43LCAxLjApOyAkMyBza3lDb2wgPSAkeChuaWdodCwgdHdpbGlnaHQsICRzKC0wLjUsIC0wLjEsIHVfc3VuWSkpOyBza3lDb2wgPSAkeChza3lDb2wsIHN1bnNldCwgJHMoLTAuMSwgMC4xLCB1X3N1blkpKTsgc2t5Q29sID0gJHgoc2t5Q29sLCBkYXksICRzKDAuMSwgMC41LCB1X3N1blkpKTsgJGwgc3VuQW5nbGUgPSB1X3RvZCAqIDYuMjgzIC0gMS41NzsgJDIgc3VuUG9zID0gJDIoMC41ICsgY29zKHN1bkFuZ2xlKSowLjQsIDAuNSArIHNpbihzdW5BbmdsZSkqMC40KTsgJDIgbW9vblBvcyA9ICQyKDAuNSAtIGNvcyhzdW5BbmdsZSkqMC40LCAwLjUgLSBzaW4oc3VuQW5nbGUpKjAuNCk7ICRsIHN1biA9ICRzKDAuMDQsIDAuMDMsICRnKCRVIC0gc3VuUG9zKSk7ICRsIHN1bkdsb3cgPSAkcygwLjQsIDAuMCwgJGcoJFUgLSBzdW5Qb3MpKTsgJGwgbW9vbiA9ICRzKDAuMDgsIDAuMDcsICRnKCRVIC0gbW9vblBvcykpOyAkbCBtb29uR2xvdyA9ICRzKDAuMjUsIDAuMCwgJGcoJFUgLSBtb29uUG9zKSk7ICRsIHJheXMgPSAwLjA7IGlmICh1X3N1blkgPiAwLjApIHsgJDIgcmF5U3QgPSAkVSAtIHN1blBvczsgJGwgciA9ICRnKHJheVN0KTsgJGwgYSA9IGF0YW4ocmF5U3QueSwgcmF5U3QueCk7IHJheXMgPSBwb3coYWJzKHNpbihhICogMTIuMCArIHQgKiA1LjApKSwgMTAuMCkgKiAkcygwLjgsIDAuMCwgcikgKiB1X3N1blk7IH0gJDIgc3RhclV2ID0gJFUgKyAkMih1X3RvZCAqIDAuMiwgMC4wKTsgJGwgc3RhcnMgPSBzdGVwKDAuOTk4LCAkcihzdGFyVXYpKTsgc3RhcnMgKj0gKDAuNyArIDAuMyAqIHNpbigkdCAqIDIuMCArICRyKCRVKSAqIDYyLjgpKTsgc3RhcnMgKj0gJHMoMC4xLCAtMC4zLCB1X3N1blkpOyAkMyBmaW5hbENvbCA9ICR4KHNreUNvbCwgJDMoMS4wKSwgY2xvdWRzICogMC41ICogJHMoLTAuMSwgMC4yLCB1X3N1blkpKTsgZmluYWxDb2wgKz0gc3VuICogJDMoMS4wLCAxLjAsIDAuOCkgKyBzdW5HbG93ICogc3Vuc2V0ICogMC41ICogbWF4KDAuMCwgdV9zdW5ZKTsgZmluYWxDb2wgKz0gbW9vbiAqICQzKDAuOSwgMC45NSwgMS4wKSArIG1vb25HbG93ICogJDMoMC4yLCAwLjQsIDAuOCkgKiAwLjMgKiAkcygwLjAsIC0wLjIsIHVfc3VuWSk7IGZpbmFsQ29sICs9IHN0YXJzOyBmaW5hbENvbCArPSByYXlzICogJDMoMS4wLCAwLjgsIDAuNCkgKiAwLjU7ICRmID0gJDQoZmluYWxDb2wsIDEuMCk7IH0=";
-        payloadDisplay.innerText = SKY_PAYLOAD;
-        document.getElementById('byte-count').innerText = `${SKY_PAYLOAD.length} Bytes`;
-        skyTg.init(TexGen.decompress(SKY_PAYLOAD));
+            // Sky Demo Logic
+            const skyCanvas = document.getElementById('sky-canvas');
+            const skyTodInput = document.getElementById('sky-tod');
+            const payloadDisplay = document.getElementById('payload-display');
+            const skyTg = new TexGen({ canvas: skyCanvas });
+            
+            const SKY_PAYLOAD = "JHUgJGwgdV90b2Q7ICR1ICRsIHVfc3VuWTsgJG0geyAkbCB0ID0gJHQgKiAwLjA1OyAkbCBjMSA9ICRiKCRVICogMi4wICsgJDIodCwgdCAqIDAuMyksIDIuMCk7ICRsIGMyID0gJGIoJFUgKiA1LjAgLSAkMih0ICogMS41LCAwLjApLCA1LjApOyAkbCBjbG91ZHMgPSAkcygwLjQsIDAuNywgYzEgKiBjMiArIGMxICogMC41KTsgJDMgbmlnaHQgPSAkMygwLjAxLCAwLjAxLCAwLjA1KTsgJDMgdHdpbGlnaHQgPSAkMygwLjIsIDAuMSwgMC4zKTsgJDMgc3Vuc2V0ID0gJDMoMS4wLCAwLjQsIDAuMSk7ICQzIGRheSA9ICQzKDAuNCwgMC43LCAxLjApOyAkMyBza3lDb2wgPSAkeChuaWdodCwgdHdpbGlnaHQsICRzKC0wLjUsIC0wLjEsIHVfc3VuWSkpOyBza3lDb2wgPSAkeChza3lDb2wsIHN1bnNldCwgJHMoLTAuMSwgMC4xLCB1X3N1blkpKTsgc2t5Q29sID0gJHgoc2t5Q29sLCBkYXksICRzKDAuMSwgMC41LCB1X3N1blkpKTsgJGwgc3VuQW5nbGUgPSB1X3RvZCAqIDYuMjgzIC0gMS41NzsgJDIgc3VuUG9zID0gJDIoMC41ICsgY29zKHN1bkFuZ2xlKSowLjQsIDAuNSArIHNpbihzdW5BbmdsZSkqMC40KTsgJDIgbW9vblBvcyA9ICQyKDAuNSAtIGNvcyhzdW5BbmdsZSkqMC40LCAwLjUgLSBzaW4oc3VuQW5nbGUpKjAuNCk7ICRsIHN1biA9ICRzKDAuMDQsIDAuMDMsICRnKCRVIC0gc3VuUG9zKSk7ICRsIHN1bkdsb3cgPSAkcygwLjQsIDAuMCwgJGcoJFUgLSBzdW5Qb3MpKTsgJGwgbW9vbiA9ICRzKDAuMDgsIDAuMDcsICRnKCRVIC0gbW9vblBvcykpOyAkbCBtb29uR2xvdyA9ICRzKDAuMjUsIDAuMCwgJGcoJFUgLSBtb29uUG9zKSk7ICRsIHJheXMgPSAwLjA7IGlmICh1X3N1blkgPiAwLjApIHsgJDIgcmF5U3QgPSAkVSAtIHN1blBvczsgJGwgciA9ICRnKHJheVN0KTsgJGwgYSA9IGF0YW4ocmF5U3QueSwgcmF5U3QueCk7IHJheXMgPSBwb3coYWJzKHNpbihhICogMTIuMCArIHQgKiA1LjApKSwgMTAuMCkgKiAkcygwLjgsIDAuMCwgcikgKiB1X3N1blk7IH0gJDIgc3RhclV2ID0gJFUgKyAkMih1X3RvZCAqIDAuMiwgMC4wKTsgJGwgc3RhcnMgPSBzdGVwKDAuOTk4LCAkcihzdGFyVXYpKTsgc3RhcnMgKj0gKDAuNyArIDAuMyAqIHNpbigkdCAqIDIuMCArICRyKCRVKSAqIDYyLjgpKTsgc3RhcnMgKj0gJHMoMC4xLCAtMC4zLCB1X3N1blkpOyAkMyBmaW5hbENvbCA9ICR4KHNreUNvbCwgJDMoMS4wKSwgY2xvdWRzICogMC41ICogJHMoLTAuMSwgMC4yLCB1X3N1blkpKTsgZmluYWxDb2wgKz0gc3VuICogJDMoMS4wLCAxLjAsIDAuOCkgKyBzdW5HbG93ICogc3Vuc2V0ICogMC41ICogbWF4KDAuMCwgdV9zdW5ZKTsgZmluYWxDb2wgKz0gbW9vbiAqICQzKDAuOSwgMC45NSwgMS4wKSArIG1vb25HbG93ICogJDMoMC4yLCAwLjQsIDAuOCkgKiAwLjMgKiAkcygwLjAsIC0wLjIsIHVfc3VuWSk7IGZpbmFsQ29sICs9IHN0YXJzOyBmaW5hbENvbCArPSByYXlzICogJDMoMS4wLCAwLjgsIDAuNCkgKiAwLjU7ICRmID0gJDQoZmluYWxDb2wsIDEuMCk7IH0=";
+            payloadDisplay.innerText = SKY_PAYLOAD;
+            document.getElementById('byte-count').innerText = `${SKY_PAYLOAD.length} Bytes`;
+            skyTg.init(TexGen.decompress(SKY_PAYLOAD));
 
-        function updateSliders(code) {
-            slidersContainer.innerHTML = '';
-            const floatRegex = /uniform\s+float\s+(\w+);\s*\/\/\s*@slider\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)/g;
-            let match;
-            let hasSliders = false;
-            while ((match = floatRegex.exec(code)) !== null) {
-                hasSliders = true;
-                const [_, name, min, max, val] = match;
-                if (dynamicUniforms[name] === undefined) dynamicUniforms[name] = parseFloat(val);
-                const row = document.createElement('div');
-                row.className = 'slider-row';
-                row.innerHTML = `<label title="${name}">${name}</label><input type="range" min="${min}" max="${max}" step="0.01" value="${dynamicUniforms[name]}"><span style="width: 40px; font-family: monospace;">${dynamicUniforms[name].toFixed(2)}</span>`;
-                const input = row.querySelector('input');
-                const span = row.querySelector('span');
-                input.oninput = (e) => {
-                    const v = parseFloat(e.target.value);
-                    dynamicUniforms[name] = v;
-                    span.innerText = v.toFixed(2);
-                };
-                slidersContainer.appendChild(row);
+            function updateSliders(code) {
+                slidersContainer.innerHTML = '';
+                let hasSliders = false;
+                const metadata = TexGen.parseMetadata(code);
+                for (const [name, info] of Object.entries(metadata.uniforms)) {
+                    if (info.type === 'float') {
+                        hasSliders = true;
+                        if (dynamicUniforms[name] === undefined) dynamicUniforms[name] = info.default;
+                        const row = document.createElement('div');
+                        row.className = 'slider-row';
+                        row.innerHTML = `<label title="${name}">${name}</label><input type="range" min="${info.min}" max="${info.max}" step="0.01" value="${dynamicUniforms[name]}"><span style="width: 40px; font-family: monospace;">${dynamicUniforms[name].toFixed(2)}</span>`;
+                        const input = row.querySelector('input');
+                        const span = row.querySelector('span');
+                        input.oninput = (e) => {
+                            const v = parseFloat(e.target.value);
+                            dynamicUniforms[name] = v;
+                            span.innerText = v.toFixed(2);
+                        };
+                        slidersContainer.appendChild(row);
+                    }
+                }
+                slidersContainer.style.display = hasSliders ? 'flex' : 'none';
             }
-            slidersContainer.style.display = hasSliders ? 'flex' : 'none';
-        }
 
-        function compile() {
-            const code = editor.value;
-            errorLog.style.display = 'none';
-            try {
-                if (tg.init(code)) updateSliders(code);
-                else {
-                    errorLog.innerText = "Shader Compilation Error. Check console for details.";
+            function compile() {
+                const code = editor.value;
+                errorLog.style.display = 'none';
+                try {
+                    tg.init(code);
+                    updateSliders(code);
+                } catch (e) {
+                    errorLog.innerText = e.message;
                     errorLog.style.display = 'block';
                 }
-            } catch (e) {
-                errorLog.innerText = e.message;
-                errorLog.style.display = 'block';
             }
-        }
 
-        editor.oninput = compile;
+            editor.oninput = compile;
 
-        function animate() {
-            const time = performance.now() / 1000;
-            tg.render(time, dynamicUniforms);
+            function animate() {
+                const time = performance.now() / 1000;
+                tg.render(time, dynamicUniforms);
+                const skyTod = parseFloat(skyTodInput.value);
+                const sunY = Math.sin(skyTod * Math.PI * 2 - Math.PI/2);
+                skyTg.render(time, { u_tod: skyTod, u_sunY: sunY });
+                requestAnimationFrame(animate);
+            }
 
-            const skyTod = parseFloat(skyTodInput.value);
-            const sunY = Math.sin(skyTod * Math.PI * 2 - Math.PI/2);
-            skyTg.render(time, { u_tod: skyTod, u_sunY: sunY });
-
-            requestAnimationFrame(animate);
-        }
-
-        compile();
-        animate();
+            compile();
+            animate();
+        });
     </script>
 </body>
 </html>

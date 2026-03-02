@@ -52,9 +52,20 @@ export default class TexGen {
     static decompress(base64: string): string | null;
 
     /**
+     * Compresses raw GLSL code into a tiny Base64 payload string.
+     */
+    static compress(shaderCode: string): string | null;
+
+    /**
+     * Parses a GLSL shader string for @slider and @color annotations.
+     * Returns an object containing the detected uniforms, their types, defaults, and ranges.
+     */
+    static parseMetadata(shaderCode: string): { uniforms: Record<string, any> };
+
+    /**
      * Compiles the shader and prepares the WebGL program.
      * @param shaderCode The raw GLSL code.
-     * @returns true if successful, false otherwise.
+     * @returns true if successful, throws an Error otherwise.
      */
     init(shaderCode: string): boolean;
 

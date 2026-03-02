@@ -1,5 +1,6 @@
 // main.ts - TexGen TypeScript Gallery
-import TexGen from '../texgen.js';
+// @ts-ignore
+import TexGen from './texgen.mjs';
 
 const app = document.getElementById('app')!;
 const modalOverlay = document.getElementById('modal-overlay')!;

@@ -2,7 +2,10 @@
   "name": "texgen",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "texgen.js",
+  "bin": {
+    "texgen": "./bin/cli.js"
+  },
   "scripts": {
     "build": "make build",
     "test": "npm run build && vitest run",
@@ -17,5 +20,9 @@
     "http-server": "^14.1.1",
     "jsdom": "^28.1.0",
     "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "canvas": "^3.2.1",
+    "gl": "^8.1.6"
   }
 }
