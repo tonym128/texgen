@@ -2,6 +2,12 @@
 
 TexGen is a powerful, web-based procedural texture generator that leverages GLSL shaders to create high-quality textures in real-time. It features a built-in shader editor, a vast library of examples, and a Physically Based Rendering (PBR) previewer to visualize how textures will look in a modern 3D engine.
 
+## 🚀 Recent Updates
+- **Mobile First**: All 3D and physics examples now feature touch-friendly on-screen controls.
+- **Adaptive Display**: Automatic scaling for high-DPI (Retina) screens and dynamic window resizing.
+- **Improved Precision**: Library now defaults to `highp` precision, fixing heightmap artifacts on mobile GPUs.
+- **TypeScript Support**: Full `.d.ts` definitions and a browser-ready TypeScript gallery.
+
 ## Features
 
 - **Live GLSL Editor:** Write and compile shaders instantly with real-time feedback.
@@ -10,7 +16,7 @@ TexGen is a powerful, web-based procedural texture generator that leverages GLSL
 - **Dynamic Sliders:** Add `@slider` annotations to your GLSL uniforms to create interactive controls for your shaders.
 - **Shader Compression:** Easily share your creations using built-in URL-based sharing (via shader compression).
 - **Visualization Modes:** Toggle between Albedo, Normal, Roughness, Metallic, and Ambient Occlusion views.
-- **Export Capabilities:** Save your generated textures directly from the browser.
+- **Export Capabilities:** Save your generated textures directly from the browser as PNG or raw pixel data.
 
 ## Getting Started
 
@@ -62,12 +68,11 @@ The project uses `vitest` for unit and UI testing.
 npm test
 ```
 
-## Technologies Used
-
-- **GLSL / WebGL:** For high-performance texture generation.
-- **Vanilla JavaScript:** Core application logic.
-- **HTML5/CSS3:** Modern, dark-themed user interface.
-- **Vitest:** Testing framework.
+### Build Pipeline
+The project includes a `Makefile` for synchronizing versions and generating distribution files.
+```bash
+make build
+```
 
 ## License
 
