@@ -70,7 +70,7 @@ class MarbleRoller {
         this.textures = {};
         
         this.marble = {
-            x: 100, y: 100,
+            x: 0, y: 0,
             vx: 0, vy: 0,
             radius: 20,
             speed: 0.5,
@@ -81,8 +81,18 @@ class MarbleRoller {
         this.score = 0;
         this.state = 'LOADING';
         
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
         this.setupInput();
         this.init();
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        if (this.state === 'PLAYING') {
+            this.generateLevel();
+        }
     }
 
     async init() {
@@ -114,6 +124,19 @@ class MarbleRoller {
     setupInput() {
         window.addEventListener('keydown', e => this.handleKey(e.code, true));
         window.addEventListener('keyup', e => this.handleKey(e.code, false));
+
+        // Touch buttons
+        const bindBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); this.input[key] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); this.input[key] = false; });
+            btn.addEventListener('touchcancel', (e) => { e.preventDefault(); this.input[key] = false; });
+        };
+        bindBtn('btn-up', 'up');
+        bindBtn('btn-down', 'down');
+        bindBtn('btn-left', 'left');
+        bindBtn('btn-right', 'right');
     }
 
     handleKey(code, isDown) {
@@ -124,15 +147,18 @@ class MarbleRoller {
     }
 
     generateLevel() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
         this.walls = [];
         this.holes = [];
 
-        // Randomize which corner is start vs goal
+        // Corners are now relative to screen size
+        const padding = 100;
         const corners = [
-            { start: {x: 100, y: 100}, goal: {x: 700, y: 500} },
-            { start: {x: 700, y: 500}, goal: {x: 100, y: 100} },
-            { start: {x: 700, y: 100}, goal: {x: 100, y: 500} },
-            { start: {x: 100, y: 500}, goal: {x: 700, y: 100} }
+            { start: {x: padding, y: padding}, goal: {x: w - padding, y: h - padding} },
+            { start: {x: w - padding, y: h - padding}, goal: {x: padding, y: padding} },
+            { start: {x: w - padding, y: padding}, goal: {x: padding, y: h - padding} },
+            { start: {x: padding, y: h - padding}, goal: {x: w - padding, y: padding} }
         ];
         const layout = corners[Math.floor(Math.random() * corners.length)];
 
@@ -141,35 +167,38 @@ class MarbleRoller {
         this.reset();
 
         // Simple border walls
-        this.walls.push({ x: 0, y: 0, w: 800, h: 20 });
-        this.walls.push({ x: 0, y: 580, w: 800, h: 20 });
-        this.walls.push({ x: 0, y: 0, w: 20, h: 600 });
-        this.walls.push({ x: 780, y: 0, w: 20, h: 600 });
+        const bw = 20;
+        this.walls.push({ x: 0, y: 0, w: w, h: bw });
+        this.walls.push({ x: 0, y: h - bw, w: w, h: bw });
+        this.walls.push({ x: 0, y: 0, w: bw, h: h });
+        this.walls.push({ x: w - bw, y: 0, w: bw, h: h });
 
         const isSafe = (x, y, r) => {
             const dStart = Math.hypot(x - this.startPos.x, y - this.startPos.y);
             const dGoal = Math.hypot(x - this.goal.x, y - this.goal.y);
-            return dStart > 100 && dGoal > 100;
+            return dStart > 120 && dGoal > 120;
         };
 
-        // Level obstacles
-        for (let i = 0; i < 10; i++) {
-            let x = 100 + Math.random() * 600;
-            let y = 100 + Math.random() * 400;
-            let w = 40 + Math.random() * 100;
-            let h = 20;
-            if (isSafe(x + w/2, y + h/2, 50)) {
-                this.walls.push({ x, y, w, h });
+        // Level obstacles (scaled based on area)
+        const obstacleCount = Math.floor((w * h) / 40000);
+        for (let i = 0; i < obstacleCount; i++) {
+            let ox = bw + 50 + Math.random() * (w - 2 * bw - 200);
+            let oy = bw + 50 + Math.random() * (h - 2 * bw - 100);
+            let ow = 40 + Math.random() * 150;
+            let oh = 20;
+            if (isSafe(ox + ow/2, oy + oh/2, 50)) {
+                this.walls.push({ x: ox, y: oy, w: ow, h: oh });
             }
         }
 
         // Holes
-        for (let i = 0; i < 5; i++) {
-            let x = 100 + Math.random() * 600;
-            let y = 100 + Math.random() * 400;
-            let r = 25;
-            if (isSafe(x, y, r)) {
-                this.holes.push({ x, y, r });
+        const holeCount = Math.floor((w * h) / 80000);
+        for (let i = 0; i < holeCount; i++) {
+            let hx = bw + 50 + Math.random() * (w - 2 * bw - 100);
+            let hy = bw + 50 + Math.random() * (h - 2 * bw - 100);
+            let hr = 25;
+            if (isSafe(hx, hy, hr)) {
+                this.holes.push({ x: hx, y: hy, r: hr });
             }
         }
     }
@@ -235,26 +264,36 @@ class MarbleRoller {
 
     draw(t) {
         const ctx = this.ctx;
-        ctx.clearRect(0, 0, 800, 600);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        ctx.clearRect(0, 0, w, h);
 
         // 1. Floor (Tiled)
-        const floorPattern = ctx.createPattern(this.textures.floor, 'repeat');
-        ctx.fillStyle = floorPattern;
-        ctx.fillRect(0, 0, 800, 600);
+        if (this.textures.floor) {
+            const floorPattern = ctx.createPattern(this.textures.floor, 'repeat');
+            ctx.fillStyle = floorPattern;
+            ctx.fillRect(0, 0, w, h);
+        }
 
         // 2. Holes
         this.holes.forEach(h => {
-            ctx.drawImage(this.textures.hole, h.x - h.r, h.y - h.r, h.r * 2, h.r * 2);
+            if (this.textures.hole) {
+                ctx.drawImage(this.textures.hole, h.x - h.r, h.y - h.r, h.r * 2, h.r * 2);
+            }
         });
 
         // 3. Goal
-        ctx.drawImage(this.textures.goal, this.goal.x - 40, this.goal.y - 40, 80, 80);
+        if (this.textures.goal) {
+            ctx.drawImage(this.textures.goal, this.goal.x - 40, this.goal.y - 40, 80, 80);
+        }
 
         // 4. Walls
         ctx.fillStyle = '#222';
         this.walls.forEach(w => {
             ctx.fillRect(w.x + 5, w.y + 5, w.w, w.h);
-            ctx.drawImage(this.textures.wall, 0, 0, 64, 64, w.x, w.y, w.w, w.h);
+            if (this.textures.wall) {
+                ctx.drawImage(this.textures.wall, 0, 0, 64, 64, w.x, w.y, w.w, w.h);
+            }
         });
 
         // 5. Marble
@@ -263,12 +302,14 @@ class MarbleRoller {
         ctx.arc(this.marble.x + 4, this.marble.y + 4, this.marble.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.drawImage(this.textures.marble, 
-            this.marble.x - this.marble.radius, 
-            this.marble.y - this.marble.radius, 
-            this.marble.radius * 2, 
-            this.marble.radius * 2
-        );
+        if (this.textures.marble) {
+            ctx.drawImage(this.textures.marble, 
+                this.marble.x - this.marble.radius, 
+                this.marble.y - this.marble.radius, 
+                this.marble.radius * 2, 
+                this.marble.radius * 2
+            );
+        }
     }
 
     loop(t) {

@@ -2,21 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TexGen - Marble Roller</title>
     <style>
-        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; }
-        #game-container { position: relative; width: 800px; height: 600px; box-shadow: 0 0 20px rgba(0,0,0,1); }
-        canvas { display: block; image-rendering: pixelated; background: #111; }
-        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        canvas { display: block; image-rendering: pixelated; background: #111; max-width: 100%; max-height: 100%; }
+        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
         #loading { position: absolute; font-size: 32px; font-weight: bold; color: #00ffcc; z-index: 100; }
+        
+        /* Touch Controls */
+        #touch-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            height: 160px;
+            display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .control-group { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); gap: 10px; pointer-events: auto; }
+        .btn {
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { background: rgba(0, 255, 204, 0.4); border-color: #00ffcc; }
+        
+        @media (pointer: coarse) {
+            #touch-controls { display: flex; }
+        }
     </style>
 </head>
 <body>
     <div id="loading">Baking Procedural Textures...</div>
     <div id="game-container">
         <div class="hud">SCORE: <span id="score">0</span></div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="touch-controls">
+            <div class="control-group" style="grid-template-columns: 60px; grid-template-rows: 60px 60px; margin-left: 20px;">
+                <div id="btn-up" class="btn" style="grid-row: 1;">&uarr;</div>
+                <div id="btn-down" class="btn" style="grid-row: 2;">&darr;</div>
+            </div>
+            <div class="control-group" style="grid-template-columns: 60px 60px; grid-template-rows: 60px; margin-right: 20px;">
+                <div id="btn-left" class="btn" style="grid-column: 1;">&larr;</div>
+                <div id="btn-right" class="btn" style="grid-column: 2;">&rarr;</div>
+            </div>
+        </div>
     </div>
 
     <script src="texgen.js"></script>

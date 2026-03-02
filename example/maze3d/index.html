@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TexGen - 3D Maze</title>
     <style>
-        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         
         #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
         
@@ -20,10 +20,44 @@
         .instructions { position: absolute; bottom: 20px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; }
 
         /* Minimap */
-        #minimap-container { position: absolute; bottom: 20px; right: 20px; width: 200px; height: 200px; border: 3px solid #444; border-radius: 8px; background: rgba(0, 0, 0, 0.7); box-shadow: 0 0 15px rgba(0,0,0,0.8); z-index: 10; overflow: hidden;}
+        #minimap-container { position: absolute; top: 20px; right: 20px; width: 150px; height: 150px; border: 3px solid #444; border-radius: 8px; background: rgba(0, 0, 0, 0.7); box-shadow: 0 0 15px rgba(0,0,0,0.8); z-index: 10; overflow: hidden;}
         #minimap { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 
         .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); pointer-events: none; z-index: 10; }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            user-select: none;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .control-group { display: flex; gap: 15px; pointer-events: auto; }
+        .btn-circle {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; color: #fff; backdrop-filter: blur(5px);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-circle:active { background: rgba(0, 255, 204, 0.4); border-color: #00ffcc; transform: scale(0.95); }
+
+        @media (pointer: coarse) {
+            #mobile-controls { display: flex; }
+            .instructions { display: none; }
+        }
+
+        @media (max-width: 600px) {
+            #minimap-container { width: 100px; height: 100px; top: auto; bottom: 120px; right: 20px; }
+            .hud { font-size: 18px; }
+        }
     </style>
     <!-- Include Three.js for the 3D rendering engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -35,8 +69,20 @@
         <div class="instructions">WASD or Arrow Keys to Move/Turn</div>
         <div class="crosshair"></div>
         <canvas id="webgl-canvas"></canvas>
+        
         <div id="minimap-container">
             <canvas id="minimap" width="200" height="200"></canvas>
+        </div>
+
+        <div id="mobile-controls">
+            <div class="control-group">
+                <div class="btn-circle" id="btn-left">←</div>
+                <div class="btn-circle" id="btn-right">→</div>
+            </div>
+            <div class="control-group">
+                <div class="btn-circle" id="btn-up">↑</div>
+                <div class="btn-circle" id="btn-down">↓</div>
+            </div>
         </div>
     </div>
 

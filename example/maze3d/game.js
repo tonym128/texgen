@@ -108,6 +108,7 @@ class Maze3D {
     initThreeJS() {
         const canvas = document.getElementById('webgl-canvas');
         this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         
         this.scene = new THREE.Scene();
@@ -223,6 +224,19 @@ class Maze3D {
     setupInput() {
         window.addEventListener('keydown', e => this.handleKey(e.code, true));
         window.addEventListener('keyup', e => this.handleKey(e.code, false));
+
+        // Mobile controls
+        const bindBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); this.input[key] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); this.input[key] = false; });
+            btn.addEventListener('touchcancel', (e) => { e.preventDefault(); this.input[key] = false; });
+        };
+        bindBtn('btn-up', 'w');
+        bindBtn('btn-down', 's');
+        bindBtn('btn-left', 'a');
+        bindBtn('btn-right', 'd');
     }
 
     handleKey(code, isDown) {

@@ -3,46 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TexGen - Ultimate Platformer</title>
+    <title>TexGen Platformer Ultimate</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #000; }
+        :root { --ui-bg: rgba(0, 0, 0, 0.8); --text: #fff; --accent: #00ffcc; }
+        body { margin: 0; background-color: #000; color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; touch-action: none; }
+        
+        #game-container { position: relative; width: 800px; height: 600px; overflow: hidden; background: #111; box-shadow: 0 0 40px rgba(0,0,0,1); transform-origin: center; }
         canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
         
-        #ui { position: absolute; top: 20px; left: 20px; z-index: 100; font-weight: bold; text-shadow: 2px 2px 4px #000; }
-        #progress-bar { width: 200px; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; margin-top: 10px; overflow: hidden; border: 1px solid #000; }
-        #progress-fill { height: 100%; background: #00ffcc; width: 0%; transition: width 0.3s; }
-
-        #screens { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.7); z-index: 500; backdrop-filter: blur(5px); }
-        .screen { text-align: center; }
-        .btn { padding: 15px 40px; background: #00ffcc; color: #000; border: none; border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; transition: 0.2s; }
-        .btn:hover { transform: scale(1.1); }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--ui-bg); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .overlay.active { display: flex; }
+        
+        h1 { color: var(--accent); font-size: 48px; text-shadow: 0 0 10px var(--accent); margin-bottom: 20px; text-align: center; }
+        h2 { color: #aaa; margin-top: 0; }
+        
+        button { background: transparent; color: var(--text); border: 2px solid var(--accent); padding: 10px 20px; font-size: 20px; margin: 10px; cursor: pointer; transition: all 0.2s; border-radius: 5px; width: 250px; text-transform: uppercase; letter-spacing: 2px; z-index: 11;}
+        button:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
+        
+        #slots-container { display: flex; flex-direction: column; gap: 10px; }
+        .slot-btn { display: flex; justify-content: space-between; width: 400px; text-align: left; }
+        .slot-empty { color: #666; font-style: italic; }
+        
+        .hud { position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; width: 100%; height: 80px; display: none; flex-direction: column; align-items: center; padding: 10px 20px; box-sizing: border-box; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 0 #000; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); }
+        .hud-row { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        
+        #progress-container { width: 300px; height: 12px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 6px; overflow: hidden; margin-top: 5px; pointer-events: none; }
+        #progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.1s; }
+        .progress-label { display: flex; justify-content: space-between; width: 300px; font-size: 12px; margin-top: 2px; }
+        
+        /* Map specific */
+        .map-node { width: 30px; height: 30px; border-radius: 50%; background: #333; border: 3px solid #666; position: absolute; transform: translate(-50%, -50%); cursor: pointer; transition: all 0.2s;}
+        .map-node.unlocked { background: #555; border-color: #fff; }
+        .map-node.current { background: var(--accent); border-color: #fff; box-shadow: 0 0 15px var(--accent); transform: translate(-50%, -50%) scale(1.2); }
+        .map-player { width: 32px; height: 32px; position: absolute; transform: translate(-50%, -100%); transition: all 0.5s ease-in-out; pointer-events: none; z-index: 12; }
+        .map-path { position: absolute; background: #555; height: 4px; transform-origin: left center; z-index: -1; }
+        #map-container { position: relative; width: 600px; height: 400px; margin-top: 20px; border: 2px solid #444; background: #1a1a1a; }
+        
+        /* Leaderboard */
+        table { width: 400px; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: left; font-size: 18px; }
+        th { color: var(--accent); }
+        
+        #loading { position: absolute; font-size: 32px; font-weight: bold; color: var(--accent); animation: pulse 1s infinite alternate; z-index: 200; }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+        #transition-swipe { position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: #000; z-index: 100; pointer-events: none; transition: left 0.5s ease-in-out; }
 
         /* Mobile Controls */
         #mobile-controls {
-            position: absolute; bottom: 40px; left: 0; width: 100%;
-            display: none; justify-content: space-between; padding: 0 40px; box-sizing: border-box;
-            user-select: none; z-index: 1000;
+            position: absolute; bottom: 20px; left: 0; width: 100%;
+            display: none; justify-content: space-between; padding: 0 20px; box-sizing: border-box;
+            user-select: none; z-index: 100; pointer-events: none;
         }
         .btn-circle {
             width: 80px; height: 80px; background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.4); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 2rem; color: #fff; backdrop-filter: blur(5px);
+            font-size: 2.5rem; color: #fff; backdrop-filter: blur(5px);
+            pointer-events: auto;
         }
         .btn-circle:active { background: rgba(0, 255, 204, 0.5); transform: scale(0.9); }
 
-        @media (max-width: 768px) { #mobile-controls { display: flex; } }
+        @media (pointer: coarse) {
+            #mobile-controls { display: flex; }
+        }
     </style>
 </head>
 <body>
-
+    <div id="loading">Generating Textures...</div>
+    
     <div id="game-container">
-        <canvas id="game-canvas"></canvas>
+        <div id="transition-swipe"></div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
         
-        <div id="ui">
-            <div id="stats">LEVEL 1 - LIVES: 10</div>
-            <div id="progress-bar"><div id="progress-fill"></div></div>
+        <div id="hud" class="hud">
+            <div class="hud-row">
+                <div id="hud-score">Score: 0</div>
+                <div id="hud-rings" style="color: #ffd700;">Rings: 0</div>
+                <div id="hud-powerup" style="color: var(--accent);"></div>
+                <div id="hud-lives">Lives: 3</div>
+            </div>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div class="progress-label">
+                <span>START</span>
+                <span>FINISH</span>
+            </div>
         </div>
 
         <div id="mobile-controls">
@@ -53,20 +99,61 @@
             <div class="btn-circle" id="btn-jump" style="background: rgba(0, 255, 204, 0.2);">▲</div>
         </div>
 
-        <div id="screens">
-            <div id="start-screen" class="screen">
-                <h1 style="font-size: 3rem; color: #00ffcc;">TexGen Platformer</h1>
-                <p>A procedural 2D adventure.</p>
-                <button class="btn" onclick="game.startFirstLevel()">START GAME</button>
+        <!-- Main Menu -->
+        <div id="menu-main" class="overlay">
+            <h1>TexGen Platformer</h1>
+            <button onclick="ui.showMenu('menu-saveload', {mode: 'load'})">Play Game</button>
+            <button onclick="ui.showMenu('menu-leaderboard')">Leaderboard</button>
+        </div>
+
+        <!-- Save / Load Menu -->
+        <div id="menu-saveload" class="overlay">
+            <h1 id="saveload-title">Select Slot</h1>
+            <div id="slots-container"></div>
+            <button onclick="ui.showMenu('menu-main')" style="margin-top: 30px;">Back</button>
+        </div>
+
+        <!-- World Map -->
+        <div id="menu-map" class="overlay">
+            <div id="map-container">
+                <img id="map-character" class="map-player" src="" style="display: none;">
             </div>
-            <div id="win-screen" class="screen" style="display: none;">
-                <h1 style="color: #00ffcc;">STAGE CLEAR!</h1>
-                <button class="btn" onclick="game.nextLevel()">NEXT LEVEL</button>
-            </div>
+            <button onclick="ui.showMenu('menu-saveload', {mode: 'save'})" style="margin-top: 20px;">Save Game</button>
+            <button onclick="ui.showMenu('menu-main')">Main Menu</button>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="menu-leaderboard" class="overlay">
+            <h1>Leaderboard</h1>
+            <table>
+                <thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+            <button onclick="ui.showMenu('menu-main')">Back</button>
+        </div>
+        
+        <!-- Game Over / Level Complete -->
+        <div id="menu-result" class="overlay">
+            <h1 id="result-title">Level Complete!</h1>
+            <h2 id="result-score">Score: 1000</h2>
+            <button id="btn-result-next" onclick="game.goToMap()">Continue</button>
         </div>
     </div>
 
+    <!-- Include TexGen library -->
     <script src="texgen.js"></script>
     <script src="game.js"></script>
+    <script>
+        // Adaptive resizing logic
+        function resize() {
+            const container = document.getElementById('game-container');
+            const ww = window.innerWidth;
+            const wh = window.innerHeight;
+            const scale = Math.min(ww / 800, wh / 600);
+            container.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
 </body>
 </html>
