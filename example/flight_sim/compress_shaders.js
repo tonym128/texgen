@@ -1,10 +1,7 @@
 /**
- * TexGen Compression Script
+ * TexGen Compression Script - Flight Sim Edition
  * 
  * Use this script to regenerate the compressed Base64 strings for game.js
- * if you modify the original shader source code below.
- * 
- * Usage: node compress_shaders.js
  */
 
 const TOKEN_MAP = {
@@ -21,17 +18,15 @@ const compressShader = (code) => {
     return Buffer.from(compressed).toString('base64');
 };
 
-// --- Original Shader Sources ---
-
 const terrain = `void main() {
     vec2 st = vUv * 4.0;
     float n = fbm(st, 4.0);
     float h = smoothstep(0.2, 0.8, n);
-    vec3 deepWater = vec3(0.0, 0.2, 0.5);
-    vec3 shallowWater = vec3(0.1, 0.6, 0.8);
+    vec3 deepWater = vec3(0.0, 0.1, 0.3);
+    vec3 shallowWater = vec3(0.1, 0.4, 0.6);
     vec3 sand = vec3(0.8, 0.7, 0.5);
-    vec3 grass = vec3(0.2, 0.5, 0.1);
-    vec3 rock = vec3(0.4, 0.4, 0.45);
+    vec3 grass = vec3(0.2, 0.4, 0.1);
+    vec3 rock = vec3(0.4, 0.35, 0.3);
     vec3 snow = vec3(0.9, 0.95, 1.0);
     vec3 col = mix(deepWater, shallowWater, smoothstep(0.0, 0.3, h));
     col = mix(col, sand, smoothstep(0.3, 0.35, h));
@@ -39,40 +34,48 @@ const terrain = `void main() {
     col = mix(col, rock, smoothstep(0.6, 0.75, h));
     col = mix(col, snow, smoothstep(0.8, 0.9, h));
     if (u_bakeMode == 2) {
-        float displacement = max(0.3, h);
-        gl_FragColor = vec4(vec3(displacement), 1.0);
+        gl_FragColor = vec4(vec3(max(0.2, h)), 1.0);
     } else {
         gl_FragColor = vec4(col, 1.0);
     }
 }`;
 
 const sky = `uniform float u_tod;
+uniform float u_sunY;
 void main() {
-    float t = u_time * 0.1;
-    float clouds = fbm(vUv * 3.0 + vec2(t, 0.0), 3.0);
-    clouds *= fbm(vUv * 8.0 - vec2(t * 0.5, 0.0), 8.0);
-    float sunY = cos(u_tod * 6.283);
-    float dayCycle = smoothstep(-0.2, 0.4, sunY);
-    vec3 nightSky = vec3(0.01, 0.02, 0.08);
-    vec3 sunsetSky = mix(vec3(0.9, 0.3, 0.1), vec3(0.1, 0.1, 0.4), vUv.y);
-    vec3 daySky = mix(vec3(0.3, 0.6, 1.0), vec3(0.1, 0.4, 0.8), vUv.y);
-    vec3 sky = mix(nightSky, sunsetSky, smoothstep(-0.3, 0.1, sunY));
-    sky = mix(sky, daySky, dayCycle);
+    float t = u_time * 0.05;
+    float c1 = fbm(vUv * 2.0 + vec2(t, t * 0.3), 2.0);
+    float c2 = fbm(vUv * 5.0 - vec2(t * 1.5, 0.0), 5.0);
+    float clouds = smoothstep(0.4, 0.7, c1 * c2 + c1 * 0.5);
+    vec3 night = vec3(0.01, 0.02, 0.1);
+    vec3 twilight = vec3(0.2, 0.1, 0.3);
+    vec3 sunset = vec3(1.0, 0.4, 0.1);
+    vec3 day = vec3(0.4, 0.7, 1.0);
+    vec3 skyCol = mix(night, twilight, smoothstep(-0.5, -0.1, u_sunY));
+    skyCol = mix(skyCol, sunset, smoothstep(-0.1, 0.1, u_sunY));
+    skyCol = mix(skyCol, day, smoothstep(0.1, 0.5, u_sunY));
     float sunAngle = u_tod * 6.283 - 1.57;
     vec2 sunPos = vec2(0.5 + cos(sunAngle)*0.4, 0.5 + sin(sunAngle)*0.4);
-    float dToSun = length(vUv - sunPos);
-    float sun = smoothstep(0.04, 0.03, dToSun);
+    vec2 moonPos = vec2(0.5 - cos(sunAngle)*0.4, 0.5 - sin(sunAngle)*0.4);
+    float sun = smoothstep(0.04, 0.03, length(vUv - sunPos));
+    float sunGlow = smoothstep(0.4, 0.0, length(vUv - sunPos));
+    float moon = smoothstep(0.03, 0.025, length(vUv - moonPos));
     float rays = 0.0;
-    if (u_SunY > 0.0) {
-        float a = atan(vUv.y - sunPos.y, vUv.x - sunPos.x);
-        rays = pow(abs(sin(a * 8.0 + t * 2.0)), 8.0) * smoothstep(0.6, 0.0, dToSun) * u_SunY;
+    if (u_sunY > 0.0) {
+        vec2 raySt = vUv - sunPos;
+        float r = length(raySt);
+        float a = atan(raySt.y, raySt.x);
+        rays = pow(abs(sin(a * 12.0 + t * 5.0)), 10.0) * smoothstep(0.8, 0.0, r) * u_sunY;
     }
-    float stars = step(0.997, random(vUv + floor(t))) * (1.0 - dayCycle);
-    vec3 col = mix(sky, vec3(1.0), clouds * 0.4 * dayCycle);
-    col += vec3(1.0, 0.9, 0.6) * sun;
-    col += vec3(1.0, 0.7, 0.3) * rays * 0.6;
-    col += vec3(1.0) * stars;
-    gl_FragColor = vec4(col, 1.0);
+    vec2 starUv = vUv + vec2(u_tod * 0.2, 0.0);
+    float stars = step(0.998, random(starUv));
+    stars *= (0.7 + 0.3 * sin(u_time * 2.0 + random(vUv) * 62.8));
+    stars *= smoothstep(0.1, -0.3, u_sunY);
+    vec3 finalCol = mix(skyCol, vec3(1.0), clouds * 0.5 * smoothstep(-0.1, 0.2, u_sunY));
+    finalCol += sun * vec3(1.0, 1.0, 0.8) + sunGlow * sunset * 0.5 * max(0.0, u_sunY);
+    finalCol += moon * vec3(0.8, 0.9, 1.0) + stars;
+    finalCol += rays * vec3(1.0, 0.8, 0.4) * 0.5;
+    gl_FragColor = vec4(finalCol, 1.0);
 }`;
 
 const wood = `void main() {
