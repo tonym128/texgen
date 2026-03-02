@@ -94,12 +94,14 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        #hero-canvas {
+        #hero-canvas, #sky-canvas {
             width: 100%;
-            aspect-ratio: 1;
             border-radius: 8px;
             background: #000;
         }
+
+        #hero-canvas { aspect-ratio: 1; }
+        #sky-canvas { height: 250px; }
 
         .controls {
             display: flex;
@@ -142,10 +144,6 @@
             box-sizing: border-box;
         }
 
-        #shader-editor:focus {
-            border-color: var(--accent);
-        }
-
         #error-log {
             color: var(--error);
             font-size: 0.8rem;
@@ -183,18 +181,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 255, 204, 0.1);
         }
 
-        .demo-card h3 {
-            margin: 0 0 10px 0;
-            color: var(--accent);
-            font-size: 1.4rem;
-        }
-
-        .demo-card p {
-            font-size: 0.95rem;
-            color: #9aa5ce;
-            margin-bottom: 20px;
-        }
-
         .btn {
             display: inline-block;
             padding: 8px 16px;
@@ -207,11 +193,6 @@
             transition: all 0.2s;
         }
 
-        .demo-card:hover .btn {
-            background: var(--accent);
-            color: #000;
-        }
-
         footer {
             text-align: center;
             margin-top: 80px;
@@ -222,7 +203,7 @@
         }
 
         @media (max-width: 768px) {
-            .hero { grid-template-columns: 1fr; }
+            .hero, .payload-grid { grid-template-columns: 1fr !important; }
             h1 { font-size: 3rem; }
         }
     </style>
@@ -273,18 +254,23 @@ void main() {
 
         <section class="payload-demo" style="margin-bottom: 80px;">
             <h2 style="text-align: center; color: #fff;">Compact Payloads, Infinite Detail</h2>
-            <p style="text-align: center; max-width: 700px; margin: 0 auto 30px;">The sky below is generated from a single <b>1KB</b> compressed string. Decompressed and rendered in real-time, it supports dynamic time of day and atmospheric effects.</p>
-            <div class="interactive-example">
-                <canvas id="sky-canvas" style="width: 100%; height: 250px; border-radius: 8px; background: #000;"></canvas>
-                <div class="controls">
-                    <div class="slider-row">
-                        <label>Time of Day</label>
-                        <input type="range" id="sky-tod" min="0" max="1" step="0.001" value="0.5">
+            <p style="text-align: center; max-width: 700px; margin: 0 auto 30px;">The sky below is generated from a single <b>2KB</b> compressed string. Decompressed and rendered in real-time, it supports dynamic time of day and atmospheric effects.</p>
+            <div class="interactive-example payload-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: stretch;">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <canvas id="sky-canvas"></canvas>
+                    <div class="controls">
+                        <div class="slider-row">
+                            <label>Time of Day</label>
+                            <input type="range" id="sky-tod" min="0" max="1" step="0.001" value="0.5">
+                        </div>
                     </div>
                 </div>
-                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-size: 0.75rem; border: 1px dashed #333;">
-                    <strong style="color: var(--accent);">Payload:</strong> 
-                    <code id="payload-display" style="color: var(--secondary); word-break: break-all;"></code>
+                <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px dashed #333; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong style="color: var(--accent); font-size: 1rem;">Base64 Payload</strong>
+                        <span id="byte-count" style="color: #565f89; font-family: monospace; font-size: 0.8rem;"></span>
+                    </div>
+                    <code id="payload-display" style="display: block; color: var(--secondary); word-break: break-all; font-family: monospace; line-height: 0.5rem; font-size: 0.7rem; letter-spacing: -0.5px;"></code>
                 </div>
             </div>
         </section>
@@ -299,7 +285,6 @@ void main() {
                     </div>
                     <div class="btn">Launch Editor</div>
                 </a>
-
                 <a href="example/platformer/index.html" class="demo-card">
                     <div>
                         <h3>Ultimate Platformer</h3>
@@ -307,7 +292,6 @@ void main() {
                     </div>
                     <div class="btn">Play Now</div>
                 </a>
-
                 <a href="example/maze3d/index.html" class="demo-card">
                     <div>
                         <h3>3D Maze Explorer</h3>
@@ -315,7 +299,6 @@ void main() {
                     </div>
                     <div class="btn">Explore 3D</div>
                 </a>
-
                 <a href="example/marble_roller/index.html" class="demo-card">
                     <div>
                         <h3>Marble Roller</h3>
@@ -323,7 +306,6 @@ void main() {
                     </div>
                     <div class="btn">Start Rolling</div>
                 </a>
-
                 <a href="example/flight_sim/index.html" class="demo-card">
                     <div>
                         <h3>Flight Sim</h3>
@@ -346,7 +328,6 @@ void main() {
         const editor = document.getElementById('shader-editor');
         const errorLog = document.getElementById('error-log');
         const slidersContainer = document.getElementById('sliders-container');
-        
         const tg = new TexGen({ canvas });
         let dynamicUniforms = {};
 
@@ -358,6 +339,7 @@ void main() {
         
         const SKY_PAYLOAD = "JHUgJGwgdV90b2Q7ICR1ICRsIHVfc3VuWTsgJG0geyAkbCB0ID0gJHQgKiAwLjA1OyAkbCBjMSA9ICRiKCRVICogMi4wICsgJDIodCwgdCAqIDAuMyksIDIuMCk7ICRsIGMyID0gJGIoJFUgKiA1LjAgLSAkMih0ICogMS41LCAwLjApLCA1LjApOyAkbCBjbG91ZHMgPSAkcygwLjQsIDAuNywgYzEgKiBjMiArIGMxICogMC41KTsgJDMgbmlnaHQgPSAkMygwLjAxLCAwLjAxLCAwLjA1KTsgJDMgdHdpbGlnaHQgPSAkMygwLjIsIDAuMSwgMC4zKTsgJDMgc3Vuc2V0ID0gJDMoMS4wLCAwLjQsIDAuMSk7ICQzIGRheSA9ICQzKDAuNCwgMC43LCAxLjApOyAkMyBza3lDb2wgPSAkeChuaWdodCwgdHdpbGlnaHQsICRzKC0wLjUsIC0wLjEsIHVfc3VuWSkpOyBza3lDb2wgPSAkeChza3lDb2wsIHN1bnNldCwgJHMoLTAuMSwgMC4xLCB1X3N1blkpKTsgc2t5Q29sID0gJHgoc2t5Q29sLCBkYXksICRzKDAuMSwgMC41LCB1X3N1blkpKTsgJGwgc3VuQW5nbGUgPSB1X3RvZCAqIDYuMjgzIC0gMS41NzsgJDIgc3VuUG9zID0gJDIoMC41ICsgY29zKHN1bkFuZ2xlKSowLjQsIDAuNSArIHNpbihzdW5BbmdsZSkqMC40KTsgJDIgbW9vblBvcyA9ICQyKDAuNSAtIGNvcyhzdW5BbmdsZSkqMC40LCAwLjUgLSBzaW4oc3VuQW5nbGUpKjAuNCk7ICRsIHN1biA9ICRzKDAuMDQsIDAuMDMsICRnKCRVIC0gc3VuUG9zKSk7ICRsIHN1bkdsb3cgPSAkcygwLjQsIDAuMCwgJGcoJFUgLSBzdW5Qb3MpKTsgJGwgbW9vbiA9ICRzKDAuMDgsIDAuMDcsICRnKCRVIC0gbW9vblBvcykpOyAkbCBtb29uR2xvdyA9ICRzKDAuMjUsIDAuMCwgJGcoJFUgLSBtb29uUG9zKSk7ICRsIHJheXMgPSAwLjA7IGlmICh1X3N1blkgPiAwLjApIHsgJDIgcmF5U3QgPSAkVSAtIHN1blBvczsgJGwgciA9ICRnKHJheVN0KTsgJGwgYSA9IGF0YW4ocmF5U3QueSwgcmF5U3QueCk7IHJheXMgPSBwb3coYWJzKHNpbihhICogMTIuMCArIHQgKiA1LjApKSwgMTAuMCkgKiAkcygwLjgsIDAuMCwgcikgKiB1X3N1blk7IH0gJDIgc3RhclV2ID0gJFUgKyAkMih1X3RvZCAqIDAuMiwgMC4wKTsgJGwgc3RhcnMgPSBzdGVwKDAuOTk4LCAkcihzdGFyVXYpKTsgc3RhcnMgKj0gKDAuNyArIDAuMyAqIHNpbigkdCAqIDIuMCArICRyKCRVKSAqIDYyLjgpKTsgc3RhcnMgKj0gJHMoMC4xLCAtMC4zLCB1X3N1blkpOyAkMyBmaW5hbENvbCA9ICR4KHNreUNvbCwgJDMoMS4wKSwgY2xvdWRzICogMC41ICogJHMoLTAuMSwgMC4yLCB1X3N1blkpKTsgZmluYWxDb2wgKz0gc3VuICogJDMoMS4wLCAxLjAsIDAuOCkgKyBzdW5HbG93ICogc3Vuc2V0ICogMC41ICogbWF4KDAuMCwgdV9zdW5ZKTsgZmluYWxDb2wgKz0gbW9vbiAqICQzKDAuOSwgMC45NSwgMS4wKSArIG1vb25HbG93ICogJDMoMC4yLCAwLjQsIDAuOCkgKiAwLjMgKiAkcygwLjAsIC0wLjIsIHVfc3VuWSk7IGZpbmFsQ29sICs9IHN0YXJzOyBmaW5hbENvbCArPSByYXlzICogJDMoMS4wLCAwLjgsIDAuNCkgKiAwLjU7ICRmID0gJDQoZmluYWxDb2wsIDEuMCk7IH0=";
         payloadDisplay.innerText = SKY_PAYLOAD;
+        document.getElementById('byte-count').innerText = `${SKY_PAYLOAD.length} Bytes`;
         skyTg.init(TexGen.decompress(SKY_PAYLOAD));
 
         function updateSliders(code) {
@@ -365,23 +347,13 @@ void main() {
             const floatRegex = /uniform\s+float\s+(\w+);\s*\/\/\s*@slider\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)/g;
             let match;
             let hasSliders = false;
-
             while ((match = floatRegex.exec(code)) !== null) {
                 hasSliders = true;
                 const [_, name, min, max, val] = match;
-                
-                if (dynamicUniforms[name] === undefined) {
-                    dynamicUniforms[name] = parseFloat(val);
-                }
-
+                if (dynamicUniforms[name] === undefined) dynamicUniforms[name] = parseFloat(val);
                 const row = document.createElement('div');
                 row.className = 'slider-row';
-                row.innerHTML = `
-                    <label title="${name}">${name}</label>
-                    <input type="range" min="${min}" max="${max}" step="0.01" value="${dynamicUniforms[name]}">
-                    <span style="width: 40px; font-family: monospace;">${dynamicUniforms[name].toFixed(2)}</span>
-                `;
-
+                row.innerHTML = `<label title="${name}">${name}</label><input type="range" min="${min}" max="${max}" step="0.01" value="${dynamicUniforms[name]}"><span style="width: 40px; font-family: monospace;">${dynamicUniforms[name].toFixed(2)}</span>`;
                 const input = row.querySelector('input');
                 const span = row.querySelector('span');
                 input.oninput = (e) => {
@@ -389,7 +361,6 @@ void main() {
                     dynamicUniforms[name] = v;
                     span.innerText = v.toFixed(2);
                 };
-
                 slidersContainer.appendChild(row);
             }
             slidersContainer.style.display = hasSliders ? 'flex' : 'none';
@@ -398,12 +369,9 @@ void main() {
         function compile() {
             const code = editor.value;
             errorLog.style.display = 'none';
-            
             try {
-                if (tg.init(code)) {
-                    updateSliders(code);
-                } else {
-                    // TexGen init failed (logged to console, but let's show it)
+                if (tg.init(code)) updateSliders(code);
+                else {
                     errorLog.innerText = "Shader Compilation Error. Check console for details.";
                     errorLog.style.display = 'block';
                 }
@@ -419,16 +387,13 @@ void main() {
             const time = performance.now() / 1000;
             tg.render(time, dynamicUniforms);
 
-            // Render Sky Demo
             const skyTod = parseFloat(skyTodInput.value);
-            const internalTod = (skyTod + 0.25) % 1.0;
             const sunY = Math.sin(skyTod * Math.PI * 2 - Math.PI/2);
-            skyTg.render(time, { u_tod: internalTod, u_sunY: sunY });
+            skyTg.render(time, { u_tod: skyTod, u_sunY: sunY });
 
             requestAnimationFrame(animate);
         }
 
-        // Initial compile and start
         compile();
         animate();
     </script>
