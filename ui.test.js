@@ -50,6 +50,14 @@ describe('TexGen UI Elements', () => {
         expect(window.getComputedStyle(overlay).display).toBe('none');
     });
 
+    it('should have a compressed-size span within the compress-btn', () => {
+        const compressBtn = document.getElementById('compress-btn');
+        const sizeSpan = document.getElementById('compressed-size');
+        expect(compressBtn).not.toBeNull();
+        expect(sizeSpan).not.toBeNull();
+        expect(compressBtn.contains(sizeSpan)).toBe(true);
+    });
+
     it('should have a toast container', () => {
         const container = document.getElementById('toast-container');
         expect(container).not.toBeNull();

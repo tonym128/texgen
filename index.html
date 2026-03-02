@@ -505,7 +505,7 @@
             <button class="tool-btn" id="export-storage-btn">Export All</button>
             <button class="tool-btn" id="import-storage-btn">Import All</button>
             <div style="border-left: 1px solid #555; height: 20px; margin: 0 5px;"></div>
-            <button class="tool-btn" id="compress-btn">Copy Compressed</button>
+            <button class="tool-btn" id="compress-btn">Copy Compressed <span id="compressed-size" style="opacity: 0.7; font-size: 0.9em; margin-left: 5px;"></span></button>
         </div>
         <div id="sliders-panel"></div>
         <div id="editor-wrapper">
@@ -1844,7 +1844,11 @@ ${commonSource}`;
                 applyDynamicUniformsToMaterials();
                 errorLog.innerText = "Compiled successfully at " + new Date().toLocaleTimeString();
                 errorLog.style.color = "#89d185";
-                try { window.location.hash = compressShader(code); } catch(e) {}
+                try { 
+                    const compressed = compressShader(code);
+                    window.location.hash = compressed;
+                    document.getElementById('compressed-size').innerText = `(${compressed.length}B)`;
+                } catch(e) {}
             }
 
             exampleSelect.onchange = (e) => {
