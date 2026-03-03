@@ -78,9 +78,16 @@ class WorldStreamer {
     }
 
     init() {
+        // Fallback: If on file://, bakeAsync will already fallback to sync bake internally,
+        // but we'll hide the warning and allow the demo to proceed.
         if (window.location.protocol === 'file:') {
-            document.getElementById('protocol-warning').style.display = 'block';
-            return;
+            console.log("Static file detection: bakeAsync will use synchronous fallback.");
+            const warning = document.getElementById('protocol-warning');
+            if (warning) {
+                warning.style.background = '#fbbf24';
+                warning.innerHTML = "ℹ️ <b>Performance Mode</b>: Running in synchronous fallback mode (Workers are disabled on local files). Expect minor stuttering during scroll.";
+                warning.style.display = 'block';
+            }
         }
 
         // Mouse Drag
@@ -104,6 +111,7 @@ class WorldStreamer {
         window.addEventListener('keydown', (e) => { this.keys[e.code] = true; });
         window.addEventListener('keyup', (e) => { this.keys[e.code] = false; });
 
+        this.updateChunks(); // Bake initial view
         requestAnimationFrame((t) => this.loop(t));
     }
 
