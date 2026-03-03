@@ -293,6 +293,85 @@
             height: 20px;
             fill: currentColor;
         }
+
+        /* Words Live Section */
+        .words-interactive {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            align-items: start;
+        }
+        .words-input-container {
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            border: 1px solid #24283b;
+            padding: 20px;
+        }
+        #words-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--secondary);
+            color: var(--accent);
+            font-size: 1.5rem;
+            padding: 10px 0;
+            outline: none;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #words-input::placeholder { color: #444; }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 20px;
+            right: 20px;
+            background: var(--panel);
+            border: 1px solid #333;
+            border-radius: 0 0 8px 8px;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .autocomplete-item:hover, .autocomplete-item.selected {
+            background: rgba(34, 211, 238, 0.1);
+            color: var(--accent);
+        }
+        .sample-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .sample-tag {
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .sample-tag:hover {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: var(--accent);
+        }
+        #words-preview-container {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #24283b;
+        }
+        @media (max-width: 768px) {
+            .words-interactive { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -379,6 +458,33 @@ void main() {
                         <span id="byte-count" style="color: #565f89; font-family: monospace; font-size: 0.8rem;"></span>
                     </div>
                     <code id="payload-display" style="display: block; color: var(--secondary); word-break: break-all; font-family: monospace; line-height: 0.5rem; font-size: 0.7rem; letter-spacing: -0.5px;"></code>
+                </div>
+            </div>
+        </section>
+
+        <section class="words-demo" style="margin-bottom: 80px;">
+            <h2 style="text-align: center; color: #fff;">Talk to your GPU</h2>
+            <p style="text-align: center; max-width: 700px; margin: 0 auto 30px;">Use <strong>TexGen Words</strong> to synthesize textures using natural language. Try typing keywords like <em>lava</em>, <em>spiral</em>, or <em>neon</em>.</p>
+            
+            <div class="words-interactive">
+                <div class="words-input-container">
+                    <input type="text" id="words-input" value="blue fire spiral warp " placeholder="Type words here..." autocomplete="off">
+                    <div id="autocomplete-results" class="autocomplete-list"></div>
+                    
+                    <div style="margin-top: 20px; color: #565f89; font-size: 0.85rem;">Try these samples:</div>
+                    <div class="sample-tags">
+                        <span class="sample-tag">blue fire spiral warp</span>
+                        <span class="sample-tag">green cells liquid drift</span>
+                        <span class="sample-tag">red star pulse rotate</span>
+                        <span class="sample-tag">purple plasma vortex glow</span>
+                        <span class="sample-tag">icy stone marble rough</span>
+                        <span class="sample-tag">forest leaf grass mist</span>
+                        <span class="sample-tag">neon digital glitch</span>
+                        <span class="sample-tag">lava smoke fire hot</span>
+                    </div>
+                </div>
+                <div id="words-preview-container">
+                    <canvas id="words-canvas" width="512" height="512"></canvas>
                 </div>
             </div>
         </section>
@@ -539,6 +645,7 @@ void main() {
 
     <!-- Include TexGen as a standard script to avoid CORS issues on file:// -->
     <script src="texgen.js"></script>
+    <script src="src/texgen.words.js"></script>
     <script>
         // Use standard window load
         window.addEventListener('load', () => {
@@ -628,9 +735,63 @@ void main() {
                 
                 const sunY = Math.sin(skyTod * Math.PI * 2 - Math.PI/2);
                 skyTg.render(time, { u_tod: skyTod, u_sunY: sunY });
+                if (typeof wordsTg !== 'undefined') wordsTg.render(time);
                 requestAnimationFrame(animate);
             }
 
+            // Words Demo Logic
+            const wordsInput = document.getElementById('words-input');
+            const wordsCanvas = document.getElementById('words-canvas');
+            const autocompleteList = document.getElementById('autocomplete-results');
+            const wordsTg = new TexGen({ canvas: wordsCanvas });
+            const parser = new TexGen.Words();
+            const keywords = Object.keys(parser.words).map(k => k.replace('_mat', '').replace('_spatial', '').replace('_mod', ''));
+            const uniqueKeywords = [...new Set(keywords)].sort();
+
+            function updateWords() {
+                const result = parser.parse(wordsInput.value || "gray grid");
+                try {
+                    wordsTg.init(result.shader);
+                } catch (e) {}
+            }
+
+            wordsInput.addEventListener('input', (e) => {
+                updateWords();
+                const val = e.target.value;
+                const lastWord = val.split(/[\s,]+/).pop().toLowerCase();
+                if (lastWord.length < 1) {
+                    autocompleteList.style.display = 'none';
+                    return;
+                }
+                const matches = uniqueKeywords.filter(k => k.startsWith(lastWord)).slice(0, 10);
+                if (matches.length > 0) {
+                    autocompleteList.innerHTML = matches.map(m => `<div class="autocomplete-item">${m}</div>`).join('');
+                    autocompleteList.style.display = 'block';
+                } else {
+                    autocompleteList.style.display = 'none';
+                }
+            });
+
+            autocompleteList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('autocomplete-item')) {
+                    const words = wordsInput.value.split(/[\s,]+/);
+                    words.pop();
+                    words.push(e.target.innerText);
+                    wordsInput.value = words.join(' ') + ' ';
+                    autocompleteList.style.display = 'none';
+                    wordsInput.focus();
+                    updateWords();
+                }
+            });
+
+            document.querySelectorAll('.sample-tag').forEach(tag => {
+                tag.addEventListener('click', () => {
+                    wordsInput.value = tag.innerText;
+                    updateWords();
+                });
+            });
+
+            updateWords();
             compile();
             animate();
         });
