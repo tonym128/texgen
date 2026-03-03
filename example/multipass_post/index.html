@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen - Multi-Pass Post-Processing</title>
+    <style>
+        :root { --bg: #050505; --panel: #111; --accent: #00ffcc; --text: #fff; --border: #333; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; width: 100%; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        canvas { width: 100%; aspect-ratio: 1.5; background: #000; border-radius: 8px; image-rendering: pixelated; }
+        h2 { color: var(--accent); margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        p { color: #888; font-size: 0.8rem; margin: 0; line-height: 1.4; }
+        .full-width { grid-column: 1 / -1; }
+        
+        textarea {
+            width: 100%; height: 180px; background: #000; color: #00ffcc; border: 1px solid #222; border-radius: 6px;
+            padding: 10px; font-family: 'Consolas', monospace; font-size: 0.8rem; resize: vertical; outline: none;
+            box-sizing: border-box;
+        }
+        textarea:focus { border-color: var(--accent); }
+        .error { color: #f48771; font-size: 0.75rem; margin-top: -10px; display: none; }
+
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header style="text-align: center; margin-bottom: 40px;">
+        <h1>Multi-Pass <span style="font-weight: 300;">Live Lab</span></h1>
+        <p>Edit the shaders below to see how Pass 1 flows into Pass 2 and forms the Final Composite.</p>
+    </header>
+
+    <div class="grid">
+        <!-- Pass 1 -->
+        <div class="card">
+            <h2>Pass 1: Base Pattern</h2>
+            <p>Generates high-contrast procedural shapes. Use <code>vUv</code> and <code>u_time</code>.</p>
+            <canvas id="canvas-pass1"></canvas>
+            <textarea id="edit-pass1" spellcheck="false"></textarea>
+            <div id="err-pass1" class="error"></div>
+        </div>
+
+        <!-- Pass 2 -->
+        <div class="card">
+            <h2>Pass 2: Bloom / Blur</h2>
+            <p>Uses <code>u_tex0</code> (the output of Pass 1) to create a blurred glow effect.</p>
+            <canvas id="canvas-pass2"></canvas>
+            <textarea id="edit-pass2" spellcheck="false"></textarea>
+            <div id="err-pass2" class="error"></div>
+        </div>
+        
+        <!-- Final -->
+        <div class="card full-width">
+            <h2>Final Composite: Neon Glow</h2>
+            <p>Combines <code>u_base</code> (Pass 1) and <code>u_bloom</code> (Pass 2) using additive blending.</p>
+            <canvas id="canvas-final"></canvas>
+            <textarea id="edit-final" spellcheck="false" style="height: 120px;"></textarea>
+            <div id="err-final" class="error"></div>
+        </div>
+    </div>
+
+    <script src="texgen.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

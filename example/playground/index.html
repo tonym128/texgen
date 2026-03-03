@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen - Interactive API Playground</title>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #22d3ee; --text: #f8fafc; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        #sidebar { width: 300px; background: var(--panel); border-right: 1px solid #334155; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-item { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #334155; transition: background 0.2s; }
+        .nav-item:hover { background: rgba(34, 211, 238, 0.1); }
+        .nav-item.active { border-left: 4px solid var(--accent); background: rgba(34, 211, 238, 0.05); }
+        .nav-item h3 { margin: 0; font-size: 0.9rem; color: var(--accent); }
+        .nav-item p { margin: 5px 0 0; font-size: 0.75rem; color: #94a3b8; }
+
+        #main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        #header { padding: 20px 40px; border-bottom: 1px solid #334155; }
+        #content { flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #334155; overflow: hidden; }
+        
+        .pane { background: var(--bg); display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+        .pane-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 15px; }
+        
+        #editor { flex-grow: 1; background: #000; color: #00ffcc; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: none; outline: none; resize: none; }
+        #output { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+        #canvas-container { position: relative; width: 100%; max-width: 400px; aspect-ratio: 1; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+        
+        .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        button:active { transform: scale(0.95); }
+        button.secondary { background: #334155; color: #fff; }
+
+        #log { margin-top: 20px; padding: 15px; background: #000; border-radius: 8px; font-family: monospace; font-size: 0.8rem; height: 100px; overflow-y: auto; color: #94a3b8; border: 1px solid #1e293b; width: 100%; box-sizing: border-box; }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow: auto; height: auto; }
+            #sidebar { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid #334155; }
+            #content { grid-template-columns: 1fr; height: auto; overflow: visible; }
+            #canvas-container { max-width: 300px; }
+            #main { height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div style="padding: 25px 20px; border-bottom: 1px solid #334155;">
+            <h1 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                <span style="background: var(--accent); width: 10px; height: 10px; border-radius: 50%;"></span>
+                TexGen Playground
+            </h1>
+        </div>
+        <div id="nav-list" style="overflow-y: auto;"></div>
+    </div>
+
+    <div id="main">
+        <div id="header">
+            <h2 id="api-name">Method Name</h2>
+            <p id="api-desc" style="color: #94a3b8; margin: 5px 0 0;">Description of the method.</p>
+        </div>
+        <div id="content">
+            <div class="pane">
+                <div class="pane-title">JavaScript Implementation</div>
+                <textarea id="editor" spellcheck="false"></textarea>
+                <div class="controls">
+                    <button id="run-btn">Run Code (Ctrl+Enter)</button>
+                    <button id="save-btn" style="background: #10b981; color: #fff;">Save Snippet (Ctrl+S)</button>
+                    <button id="reset-btn" class="secondary">Reset</button>
+                </div>
+            </div>
+            <div class="pane">
+                <div class="pane-title">Live Preview</div>
+                <div id="output">
+                    <div id="canvas-container">
+                        <canvas id="preview-canvas"></canvas>
+                    </div>
+                    <div id="log">Console output...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="texgen.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
