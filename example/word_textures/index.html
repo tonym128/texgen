@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen Words - Natural Language Textures</title>
+    <script src="../../texgen.js"></script>
+    <script src="../../src/texgen.words.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 300px;
+            --primary: #007aff;
+            --bg: #1a1a1a;
+            --surface: #222;
+            --border: #333;
+            --text: #eee;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Sidebar Styles */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-header h2 { margin: 0; font-size: 1.2rem; }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .keyword-group {
+            margin-bottom: 20px;
+        }
+        .keyword-group h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+        .keyword-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .keyword-item:hover {
+            background: #333;
+        }
+        .keyword-name {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--primary);
+        }
+        .keyword-example {
+            font-size: 0.7rem;
+            color: #888;
+            background: #111;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Main Content Styles */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 20px;
+        }
+        header {
+            text-align: center;
+        }
+        .canvas-container {
+            position: relative;
+            background: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            width: 512px;
+            height: 512px;
+            flex-shrink: 0;
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+            font-size: 18px;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+        button#generate-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .examples {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .example-btn {
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .example-btn:hover {
+            background: #444;
+        }
+        .debug-shader {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow: auto; height: auto; }
+            #sidebar { width: 100%; height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
+            .canvas-container { width: 300px; height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>Keywords</h2>
+        </div>
+        <div class="sidebar-content" id="sidebar-content">
+            <!-- Populated by JS -->
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <h1>TexGen Words</h1>
+            <p>Type a sentence to create a texture. Double-click canvas for GLSL.</p>
+        </header>
+
+        <div class="canvas-container">
+            <canvas id="output"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <input type="text" id="sentence-input" placeholder="e.g. blue noise circle mix rotate seed:42" value="blue noise circle mix rotate seed:42">
+                <button id="generate-btn">Generate</button>
+            </div>
+
+            <div class="examples">
+                <span class="example-btn" data-s="red white checker tile rotate">Red White Checker</span>
+                <span class="example-btn" data-s="fire smoke lava mix">Lava Fire</span>
+                <span class="example-btn" data-s="blue water ripple fbm">Water Ripples</span>
+                <span class="example-btn" data-s="gold shiny star mirror">Golden Star</span>
+                <span class="example-btn" data-s="digital glitch retro box">Digital Glitch</span>
+                <span class="example-btn" data-s="marble stone blue white swirl">Blue Marble</span>
+                <span class="example-btn" data-s="purple aura energy pulse">Energy Pulse</span>
+                <span class="example-btn" data-s="cyan plasma neon glow">Neon Plasma</span>
+                <span class="example-btn" data-s="flower pink green leaf center">Pink Flower</span>
+                <span class="example-btn" data-s="sun yellow orange hot aura">Burning Sun</span>
+                <span class="example-btn" data-s="matrix digital green code glitch repeat">Matrix Code</span>
+            </div>
+        </div>
+
+        <div id="debug" class="debug-shader"></div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('output');
+        const input = document.getElementById('sentence-input');
+        const btn = document.getElementById('generate-btn');
+        const debugEl = document.getElementById('debug');
+        const sidebarContent = document.getElementById('sidebar-content');
+
+        const tg = new TexGen({ canvas: canvas, width: 512, height: 512 });
+        const parser = new TexGen.Words();
+
+        function generate() {
+            const sentence = input.value;
+            const result = parser.parse(sentence);
+            
+            tg.width = result.width;
+            tg.height = result.height;
+            if (result.seed !== null) tg.seed = result.seed;
+
+            try {
+                tg.bake(result.shader);
+                debugEl.textContent = result.shader;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Simplest Example Helper
+        function getSimpleExample(word, category) {
+            switch(category) {
+                case 'COLORS': return word;
+                case 'SHAPES': return `white ${word}`;
+                case 'GENERATORS': return word;
+                case 'OPERATIONS': return `white noise ${word}`;
+                case 'MODIFIERS': return `white box ${word}`;
+                case 'SPATIAL': return `checker ${word}`;
+                case 'MATERIALS': return word;
+                case 'FLOW': return `white ${word} noise`;
+                default: return word;
+            }
+        }
+
+        // Categorized Words (based on 32-word blocks in src)
+        const categories = [
+            { name: 'COLORS', start: 0, end: 32 },
+            { name: 'SHAPES', start: 32, end: 64 },
+            { name: 'GENERATORS', start: 64, end: 96 },
+            { name: 'OPERATIONS', start: 96, end: 128 },
+            { name: 'MODIFIERS', start: 128, end: 160 },
+            { name: 'SPATIAL', start: 160, end: 192 },
+            { name: 'MATERIALS', start: 192, end: 224 },
+            { name: 'FLOW', start: 224, end: 256 }
+        ];
+
+        const allWords = Object.keys(parser.words);
+        
+        categories.forEach(cat => {
+            const group = document.createElement('div');
+            group.className = 'keyword-group';
+            const h3 = document.createElement('h3');
+            h3.textContent = cat.name;
+            group.appendChild(h3);
+
+            for (let i = cat.start; i < cat.end; i++) {
+                const word = allWords[i];
+                if (!word) continue;
+                
+                // Clean up aliases/special names for display
+                const displayName = word.replace(/_(mat|spatial|mod)$/, '');
+                const example = getSimpleExample(displayName, cat.name);
+
+                const item = document.createElement('div');
+                item.className = 'keyword-item';
+                item.innerHTML = `<span class="keyword-name">${displayName}</span><span class="keyword-example">${example}</span>`;
+                item.onclick = () => {
+                    input.value = example;
+                    generate();
+                };
+                group.appendChild(item);
+            }
+            sidebarContent.appendChild(group);
+        });
+
+        btn.onclick = generate;
+        input.onkeypress = (e) => { if (e.key === 'Enter') generate(); };
+
+        document.querySelectorAll('.example-btn').forEach(btn => {
+            btn.onclick = () => {
+                input.value = btn.dataset.s;
+                generate();
+            };
+        });
+
+        // Initial generation
+        generate();
+
+        // Animation loop
+        function animate(time) {
+            const result = parser.parse(input.value);
+            tg.render(time * 0.001);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        canvas.ondblclick = () => {
+            debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+        };
+
+    </script>
+</body>
+</html>
