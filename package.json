@@ -1,22 +1,42 @@
 {
   "name": "texgen",
   "version": "1.0.0",
-  "description": "",
+  "description": "A lightweight procedural texture generation library using GLSL.",
   "main": "texgen.js",
+  "module": "texgen.mjs",
+  "types": "texgen.d.ts",
   "bin": {
     "texgen": "./bin/cli.js"
   },
+  "files": [
+    "texgen.js",
+    "texgen.mjs",
+    "texgen.min.js",
+    "texgen.min.mjs",
+    "texgen.d.ts",
+    "src/texgen.core.js",
+    "bin/cli.js",
+    "README_LIB.md"
+  ],
   "scripts": {
     "build": "make build",
     "test": "npm run build && vitest run",
     "start": "npx http-server -p 8080",
     "setup": "npm install"
   },
-  "keywords": [],
+  "keywords": [
+    "procedural",
+    "texture",
+    "glsl",
+    "webgl",
+    "generator",
+    "gamedev"
+  ],
   "author": "Tony Mamacos <tmamacos@gmail.com>",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "esbuild": "^0.27.3",
     "http-server": "^14.1.1",
     "jsdom": "^28.1.0",
     "vitest": "^4.0.18"

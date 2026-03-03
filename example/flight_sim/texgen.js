@@ -79,6 +79,14 @@ vec3 calculateNormal(float height, float strength) {
     #endif
 }
 
+// Sobel Normal Extraction Macro
+// Usage: vec3 n = SOBEL(myHeightFunc, vUv, 1.0);
+// Requires: float myHeightFunc(vec2 uv) to be defined.
+#define SOBEL(func, uv, strength) normalize(vec3( \
+    func(uv - vec2(1.0/u_resolution.x, 0.0)) - func(uv + vec2(1.0/u_resolution.x, 0.0)), \
+    func(uv - vec2(0.0, 1.0/u_resolution.y)) - func(uv + vec2(0.0, 1.0/u_resolution.y)), \
+    2.0 / strength))
+
 vec3 applyPBRLighting(PBRData pbr, vec3 lightDir, vec3 viewDir, vec3 lightCol) {
     if (u_bakeMode == 1) return pbr.albedo;
     if (u_bakeMode == 2) return pbr.normal * 0.5 + 0.5;
@@ -156,7 +164,7 @@ class TexGen {
         this.buffer = null;
     }
 
-    static decompress(base64) {
+    static decompress(base64, customMap = null) {
         try {
             let decompressed;
             if (typeof atob === 'function') {
@@ -167,16 +175,20 @@ class TexGen {
                 return null;
             }
             
-            for (const [token, replacement] of Object.entries(TOKEN_MAP)) {
+            const map = customMap ? Object.assign({}, TOKEN_MAP, customMap) : TOKEN_MAP;
+            const entries = Object.entries(map).sort((a, b) => b[1].length - a[1].length);
+            for (const [token, replacement] of entries) {
                 decompressed = decompressed.split(replacement).join(token);
             }
             return decompressed;
         } catch(e) { return null; }
     }
 
-    static compress(shaderCode) {
+    static compress(shaderCode, customMap = null) {
         let compressed = shaderCode.replace(/\/\/.*$/gm, '').replace(/\s+/g, ' ').trim();
-        for (const [token, replacement] of Object.entries(TOKEN_MAP)) {
+        const map = customMap ? Object.assign({}, TOKEN_MAP, customMap) : TOKEN_MAP;
+        const entries = Object.entries(map).sort((a, b) => b[0].length - a[0].length);
+        for (const [token, replacement] of entries) {
             compressed = compressed.split(token).join(replacement);
         }
         if (typeof btoa === 'function') {
@@ -212,6 +224,41 @@ class TexGen {
         return metadata;
     }
 
+    static getMetadataSchema() {
+        return {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            title: "TexGen Metadata",
+            type: "object",
+            properties: {
+                uniforms: {
+                    type: "object",
+                    additionalProperties: {
+                        oneOf: [
+                            {
+                                type: "object",
+                                properties: {
+                                    type: { const: "float" },
+                                    min: { type: "number" },
+                                    max: { type: "number" },
+                                    default: { type: "number" }
+                                },
+                                required: ["type", "min", "max", "default"]
+                            },
+                            {
+                                type: "object",
+                                properties: {
+                                    type: { const: "color" },
+                                    default: { type: "string", pattern: "^#([0-9a-fA-F]{3}){1,2}$" }
+                                },
+                                required: ["type", "default"]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+    }
+
     _createShader(type, src) {
         const gl = this.gl;
         const s = gl.createShader(type);
@@ -220,7 +267,7 @@ class TexGen {
         if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
             const errorLog = gl.getShaderInfoLog(s);
             console.error("Shader Error:", errorLog);
-            throw new Error(`Shader Compilation Error:\n${errorLog}`);
+            throw new Error("Shader Compilation Error:\n" + errorLog);
         }
         return s;
     }
@@ -239,60 +286,58 @@ class TexGen {
         const isGLSL3 = this.isWebGL2 && cleanedShader.includes('#version 300 es');
         
         let coreShader = cleanedShader.replace(/#version 300 es/g, '').trim();
-        coreShader = coreShader.includes('void main') ? coreShader : `void main() { ${coreShader} }`;
+        coreShader = coreShader.includes('void main') ? coreShader : "void main() { " + coreShader + " }";
 
-        const vsSrc = isGLSL3 ? `
-            #version 300 es
-            in vec2 p;
-            out vec2 vUvRaw;
-            void main() {
-                vUvRaw = p * 0.5 + 0.5;
-                gl_Position = vec4(p, 0.0, 1.0);
-            }
-        ` : `
-            attribute vec2 p;
-            varying vec2 vUvRaw;
-            void main() {
-                vUvRaw = p * 0.5 + 0.5;
-                gl_Position = vec4(p, 0.0, 1.0);
-            }
-        `;
+        const vsSrc = isGLSL3 ? 
+            "#version 300 es\n" +
+            "in vec2 p;\n" +
+            "out vec2 vUvRaw;\n" +
+            "void main() {\n" +
+            "    vUvRaw = p * 0.5 + 0.5;\n" +
+            "    gl_Position = vec4(p, 0.0, 1.0);\n" +
+            "}" 
+            : 
+            "attribute vec2 p;\n" +
+            "varying vec2 vUvRaw;\n" +
+            "void main() {\n" +
+            "    vUvRaw = p * 0.5 + 0.5;\n" +
+            "    gl_Position = vec4(p, 0.0, 1.0);\n" +
+            "}";
 
         const extensionHeader = (!this.isWebGL2 && this.ext) ? "#extension GL_OES_standard_derivatives : enable\n" : "";
 
-        const fsSrc = isGLSL3 ? `
-            #version 300 es
-            #ifdef GL_FRAGMENT_PRECISION_HIGH
-                precision highp float;
-            #else
-                precision mediump float;
-            #endif
-            uniform float u_time;
-            uniform vec2 u_resolution;
-            uniform vec3 u_lightDir;
-            uniform vec3 u_viewDir;
-            in vec2 vUvRaw;
-            out vec4 fragColor;
-            #define vUv fract(vUvRaw)
-            #define gl_FragColor fragColor
-            ${UTILS}
-            ${coreShader}
-        ` : `
-            ${extensionHeader}
-            #ifdef GL_FRAGMENT_PRECISION_HIGH
-                precision highp float;
-            #else
-                precision mediump float;
-            #endif
-            uniform float u_time;
-            uniform vec2 u_resolution;
-            uniform vec3 u_lightDir;
-            uniform vec3 u_viewDir;
-            varying vec2 vUvRaw;
-            #define vUv fract(vUvRaw)
-            ${UTILS}
-            ${coreShader}
-        `;
+        const fsSrc = isGLSL3 ? 
+            "#version 300 es\n" +
+            "#ifdef GL_FRAGMENT_PRECISION_HIGH\n" +
+            "    precision highp float;\n" +
+            "#else\n" +
+            "    precision mediump float;\n" +
+            "#endif\n" +
+            "uniform float u_time;\n" +
+            "uniform vec2 u_resolution;\n" +
+            "uniform vec3 u_lightDir;\n" +
+            "uniform vec3 u_viewDir;\n" +
+            "in vec2 vUvRaw;\n" +
+            "out vec4 fragColor;\n" +
+            "#define vUv fract(vUvRaw)\n" +
+            "#define gl_FragColor fragColor\n" +
+            UTILS + "\n" +
+            coreShader
+            : 
+            extensionHeader +
+            "#ifdef GL_FRAGMENT_PRECISION_HIGH\n" +
+            "    precision highp float;\n" +
+            "#else\n" +
+            "    precision mediump float;\n" +
+            "#endif\n" +
+            "uniform float u_time;\n" +
+            "uniform vec2 u_resolution;\n" +
+            "uniform vec3 u_lightDir;\n" +
+            "uniform vec3 u_viewDir;\n" +
+            "varying vec2 vUvRaw;\n" +
+            "#define vUv fract(vUvRaw)\n" +
+            UTILS + "\n" +
+            coreShader;
 
         this.vs = this._createShader(gl.VERTEX_SHADER, vsSrc);
         this.fs = this._createShader(gl.FRAGMENT_SHADER, fsSrc);
@@ -305,7 +350,7 @@ class TexGen {
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
             const errorLog = gl.getProgramInfoLog(this.program);
             console.error("Program Link Error:", errorLog);
-            throw new Error(`Program Link Error:\n${errorLog}`);
+            throw new Error("Program Link Error:\n" + errorLog);
         }
 
         this.buffer = gl.createBuffer();
@@ -313,6 +358,10 @@ class TexGen {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
 
         return true;
+    }
+
+    updateShader(shaderCode) {
+        return this.init(shaderCode);
     }
 
     render(time = 0, uniforms = {}) {
@@ -385,20 +434,124 @@ class TexGen {
             } else if (format === 'bitmap' && typeof createImageBitmap !== 'undefined') {
                 return createImageBitmap(this.canvas);
             }
+            
+            // OffscreenCanvas support (for Workers)
+            if (typeof OffscreenCanvas !== 'undefined' && this.canvas instanceof OffscreenCanvas) {
+                if (this.canvas.transferToImageBitmap) return this.canvas.transferToImageBitmap();
+            }
+
             return this.canvas.toDataURL ? this.canvas.toDataURL() : null;
         }
         return null;
     }
+
+    static _getWorker() {
+        if (!this._workerPool) {
+            this._workerPool = [];
+            this._workerId = 0;
+            this._workerQueue = [];
+        }
+
+        // Reuse an idle worker if available
+        const idleWorker = this._workerPool.find(w => !w.busy);
+        if (idleWorker) return idleWorker;
+
+        // Create a new worker if pool is small
+        if (this._workerPool.length < 4) {
+            const classCode = TexGen.toString();
+            const workerCode = [
+                'const UTILS = ' + JSON.stringify(UTILS) + ';',
+                'const TOKEN_MAP = ' + JSON.stringify(TOKEN_MAP) + ';',
+                'const TexGen = (' + classCode + ');',
+                'let tgInstance = null;',
+                'self.onmessage = async (e) => {',
+                '    try {',
+                '        const { id, shaderCode, options } = e.data;',
+                '        if (!tgInstance) tgInstance = new TexGen(options);',
+                '        const result = await tgInstance.bake(shaderCode, options);',
+                '        self.postMessage({ id, result });',
+                '    } catch (err) {',
+                '        self.postMessage({ id: e.data.id, error: String(err.message || err) });',
+                '    }',
+                '};'
+            ].join('\n');
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+            const workerEntry = { worker, busy: false, callbacks: new Map() };
+            
+            worker.onmessage = (e) => {
+                const { id, result, error } = e.data;
+                const cb = workerEntry.callbacks.get(id);
+                if (cb) {
+                    if (error) {
+                        cb.reject(new Error(error));
+                    } else if (typeof ImageBitmap !== 'undefined' && result instanceof ImageBitmap) {
+                        // Convert ImageBitmap to DataURL on main thread
+                        const cvs = document.createElement('canvas');
+                        cvs.width = result.width; cvs.height = result.height;
+                        const ctx = cvs.getContext('2d');
+                        ctx.drawImage(result, 0, 0);
+                        cb.resolve(cvs.toDataURL());
+                    } else {
+                        cb.resolve(result);
+                    }
+                    workerEntry.callbacks.delete(id);
+                }
+                workerEntry.busy = false;
+                this._processQueue();
+            };
+
+            this._workerPool.push(workerEntry);
+            return workerEntry;
+        }
+
+        return null; // Must queue
+    }
+
+    static _processQueue() {
+        if (this._workerQueue.length === 0) return;
+        const workerEntry = this._getWorker();
+        if (!workerEntry) return;
+
+        const task = this._workerQueue.shift();
+        this._executeTask(workerEntry, task);
+    }
+
+    static _executeTask(workerEntry, task) {
+        const id = this._workerId++;
+        workerEntry.busy = true;
+        workerEntry.callbacks.set(id, task);
+        workerEntry.worker.postMessage({ id, shaderCode: task.shaderCode, options: task.options });
+    }
+
+    static async bakeAsync(shaderCode, options = {}) {
+        if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') {
+            const tg = new TexGen();
+            return tg.bake(shaderCode, options);
+        }
+
+        return new Promise((resolve, reject) => {
+            const task = { shaderCode, options, resolve, reject };
+            const workerEntry = this._getWorker();
+            
+            if (workerEntry) {
+                this._executeTask(workerEntry, task);
+            } else {
+                this._workerQueue.push(task);
+            }
+        });
+    }
 }
 
 (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define([], factory);
-    } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory();
-    } else {
-        root.TexGen = factory();
-    }
-}(typeof self !== 'undefined' ? self : this, function () {
-    return TexGen;
-}));
+    if (typeof define === 'function' && define.amd) { define([], factory); }
+    else if (typeof module === 'object' && module.exports) { module.exports = factory(); }
+    else { root.TexGen = factory(); }
+}(typeof self !== 'undefined' ? self : this, function () { return TexGen; }));
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) { define([], factory); }
+    else if (typeof module === 'object' && module.exports) { module.exports = factory(); }
+    else { root.TexGen = factory(); }
+}(typeof self !== 'undefined' ? self : this, function () { return TexGen; }));
