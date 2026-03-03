@@ -17,15 +17,15 @@
         @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
 
         .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
-        .instructions { position: absolute; bottom: 20px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; }
+        .instructions { position: absolute; bottom: 80px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; }
 
         #finish-banner {
             position: absolute;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85); border: 2px solid #00ffcc;
+            background: rgba(0, 0, 0, 0.3); border: 2px solid #00ffcc;
             padding: 40px; border-radius: 20px; text-align: center;
             display: none; z-index: 200; backdrop-filter: blur(10px);
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
         }
         #finish-banner h1 { margin: 0; font-size: 48px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
         #finish-banner p { font-size: 24px; margin: 20px 0; }
@@ -47,8 +47,32 @@
         }
         #start-btn:active { background: rgba(0, 255, 204, 0.4); transform: translate(-50%, -50%) scale(0.95); }
 
+        #fullscreen-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s, background 0.2s, border-color 0.2s;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        #fullscreen-btn.visible { opacity: 1; pointer-events: auto; }
+        #fullscreen-btn:hover { background: rgba(0, 255, 204, 0.2); border-color: #00ffcc; }
+        #fullscreen-btn svg { width: 24px; height: 24px; fill: #00ffcc; }
+
         @media (pointer: coarse) {
             .instructions { display: none; }
+            #fullscreen-btn { bottom: 10px; left: 10px; width: 50px; height: 50px; }
         }
     </style>
     <!-- Include Three.js for the 3D rendering engine -->
@@ -60,6 +84,9 @@
     <div id="game-container">
         <div id="loading">Baking Procedural Textures...</div>
         <button id="start-btn">Tap to Start (Enable Tilt)</button>
+        <button id="fullscreen-btn" title="Toggle Fullscreen">
+            <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
         <div id="finish-banner">
             <h1>CONGRATULATIONS!</h1>
             <p id="time-display"></p>
@@ -70,12 +97,12 @@
             </div>
             <button id="restart-btn">Play Again</button>
         </div>
-        <div id="fail-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(40, 0, 0, 0.9); border: 2px solid #ff4400; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 68, 0, 0.3);">
+        <div id="fail-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(40, 0, 0, 0.3); border: 2px solid #ff4400; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 68, 0, 0.1);">
             <h1 style="margin: 0; font-size: 48px; color: #ff4400; text-shadow: 0 0 10px #ff4400;">GRAVITY SUCKS!</h1>
             <p style="font-size: 24px; margin: 20px 0;">The marble has escaped the cube...</p>
             <button id="retry-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 18px; font-weight: bold; background: #ff4400; border: none; color: #fff; border-radius: 5px; cursor: pointer;">Try Again</button>
         </div>
-        <div id="rage-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(60, 0, 0, 0.9); border: 2px solid #ff0000; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);">
+        <div id="rage-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(60, 0, 0, 0.3); border: 2px solid #ff0000; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);">
             <h1 style="margin: 0; font-size: 48px; color: #ff0000; text-shadow: 0 0 10px #ff0000;">Rage Quit!</h1>
             <p style="font-size: 24px; margin: 20px 0;">You destroyed the maze in a fit of rage.</p>
             <button id="rage-retry-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 18px; font-weight: bold; background: #ff0000; border: none; color: #fff; border-radius: 5px; cursor: pointer;">Calm Down & Try Again</button>

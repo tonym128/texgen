@@ -17,11 +17,12 @@ class MarbleCubeGame {
         this.canvas = document.getElementById('webgl-canvas');
         this.loading = document.getElementById('loading');
         this.startBtn = document.getElementById('start-btn');
+        this.fullscreenBtn = document.getElementById('fullscreen-btn');
         
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x050508);
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 0, 180);
+        this.updateCameraDistance();
         
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -58,6 +59,7 @@ class MarbleCubeGame {
         this.targetBaseQuat = new THREE.Quaternion();
         this.startTime = 0;
         this.currentBaseQuat = new THREE.Quaternion();
+        this.uiTimeout = null;
         
         // Stats tracking
         this.stats = {
@@ -100,8 +102,17 @@ class MarbleCubeGame {
 
     resize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.updateCameraDistance();
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    updateCameraDistance() {
+        const aspect = window.innerWidth / window.innerHeight;
+        const baseDistance = 180;
+        // Increase distance if portrait to keep the cube visible
+        const distance = aspect < 1 ? baseDistance / aspect : baseDistance;
+        this.camera.position.set(0, 0, distance);
     }
     
     setupLights() {
@@ -124,6 +135,10 @@ class MarbleCubeGame {
         this.generateLevel();
         this.loading.style.display = 'none';
         
+        if (this.fullscreenBtn) {
+            this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
+
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) {
             restartBtn.addEventListener('click', () => {
@@ -498,6 +513,21 @@ class MarbleCubeGame {
     }
     
     setupInput() {
+        const showUI = () => {
+            if (this.fullscreenBtn) {
+                this.fullscreenBtn.classList.add('visible');
+                clearTimeout(this.uiTimeout);
+                this.uiTimeout = setTimeout(() => {
+                    this.fullscreenBtn.classList.remove('visible');
+                }, 3000);
+            }
+        };
+
+        window.addEventListener('mousemove', () => {
+            if (!document.pointerLockElement) showUI();
+        });
+        window.addEventListener('touchstart', showUI);
+
         this.canvas.addEventListener('click', () => { if (this.state === 'PLAYING') this.canvas.requestPointerLock(); });
         document.addEventListener('mousedown', (e) => { if (e.button === 0) this.isMouseDown = true; if (e.button === 2) this.isRightMouseDown = true; });
         document.addEventListener('mouseup', (e) => { if (e.button === 0) this.isMouseDown = false; if (e.button === 2) this.isRightMouseDown = false; });
@@ -545,8 +575,44 @@ class MarbleCubeGame {
     
     handleOrientation(e) {
         if (this.state !== 'PLAYING') return;
-        let b = Math.max(-45, Math.min(45, e.beta || 0)), g = Math.max(-45, Math.min(45, e.gamma || 0));
-        this.targetTilt.x = (b / 45) * Math.PI * 0.15; this.targetTilt.y = (g / 45) * Math.PI * 0.15;
+        
+        let b = e.beta || 0;
+        let g = e.gamma || 0;
+        
+        // Handle orientation changes
+        const orientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+        
+        if (orientation === 'landscape') {
+            // Swap and invert appropriately for landscape
+            const temp = b;
+            if (g > 0) {
+                b = g;
+                g = -temp;
+            } else {
+                b = -g;
+                g = temp;
+            }
+        }
+        
+        b = Math.max(-45, Math.min(45, b));
+        g = Math.max(-45, Math.min(45, g));
+        
+        this.targetTilt.x = (b / 45) * Math.PI * 0.15;
+        this.targetTilt.y = (g / 45) * Math.PI * 0.15;
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            const req = this.container.requestFullscreen || this.container.webkitRequestFullscreen;
+            if (req) {
+                req.call(this.container).catch(err => {
+                    console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            }
+        } else {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen;
+            if (exit) exit.call(document);
+        }
     }
     
     startGame() { this.state = 'PLAYING'; this.startTime = performance.now(); }
