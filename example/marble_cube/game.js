@@ -13,7 +13,6 @@ const MARBLE_TOKEN_MAP = { 'voronoi': '$O' };
 
 class MarbleCubeGame {
     constructor() {
-        console.log("MarbleCubeGame: Constructor starting...");
         this.container = document.getElementById('game-container');
         this.canvas = document.getElementById('webgl-canvas');
         this.loading = document.getElementById('loading');
@@ -84,11 +83,7 @@ class MarbleCubeGame {
         this.setupInput();
         window.addEventListener('resize', () => this.resize());
         
-        this.init().then(() => {
-            console.log("MarbleCubeGame: Initialization complete.");
-        }).catch(err => {
-            console.error("MarbleCubeGame: Initialization failed:", err);
-        });
+        this.init();
     }
     
     createMarbleBody() {
