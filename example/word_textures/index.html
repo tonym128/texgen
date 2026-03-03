@@ -265,7 +265,8 @@
                 <span class="example-btn" data-s="sun yellow orange hot aura">Burning Sun</span>
                 <span class="example-btn" data-s="green matrix digital pulse blur">Matrix Code</span>
                 <span class="example-btn" data-s="liquid gear ceil">Molten Machinery</span>
-            </div>
+                <span class="example-btn" data-s="perspective twist mint vortex sun">Vortex Sun</span>
+      </div>
         </div>
 
         <div id="debug" class="debug-shader"></div>
@@ -452,31 +453,84 @@
         const saveBtn = document.getElementById('save-btn');
         const editorSaveBtn = document.getElementById('editor-save-btn');
 
-        function renderBookmarks() {
+        async function renderBookmarks() {
             bookmarkCountEl.textContent = bookmarks.length;
             if (bookmarks.length === 0) {
                 bookmarksList.innerHTML = '<div style="padding: 10px; color: #555; font-size: 0.8rem; text-align: center;">No bookmarks yet</div>';
                 return;
             }
             bookmarksList.innerHTML = '';
-            bookmarks.forEach((sentence, index) => {
+            
+            for (let index = 0; index < bookmarks.length; index++) {
+                const sentence = bookmarks[index];
                 const item = document.createElement('div');
                 item.className = 'keyword-item';
                 item.style.borderBottom = '1px solid #222';
-                item.innerHTML = `
-                    <span class="keyword-name" style="color: #ff9500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;">${sentence}</span>
-                    <button class="remove-bookmark" data-index="${index}" style="background: rgba(255,0,0,0.1); border: 1px solid #f00; color: #f00; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">×</button>
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '8px';
+                item.style.padding = '8px 10px';
+                
+                const img = document.createElement('img');
+                img.width = 32;
+                img.height = 32;
+                img.style.borderRadius = '4px';
+                img.style.background = '#000';
+                img.style.flexShrink = '0';
+                
+                // Generate thumbnail
+                const result = parser.parse(sentence);
+                try {
+                    let dataUrl;
+                    if (TexGen.bakeAsync) {
+                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 32, height: 32, seed: result.seed !== null ? result.seed : 42 });
+                    } else {
+                        const tempTg = new TexGen({ width: 32, height: 32 });
+                        dataUrl = tempTg.bake(result.shader);
+                    }
+                    if (dataUrl) img.src = dataUrl;
+                } catch(e) { console.error("Thumb error", e); }
+
+                const contentDiv = document.createElement('div');
+                contentDiv.style.flex = '1';
+                contentDiv.style.overflow = 'hidden';
+                contentDiv.innerHTML = `<span class="keyword-name" style="color: #ff9500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem;" title="${sentence}">${sentence}</span>`;
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style.display = 'flex';
+                actionsDiv.style.gap = '4px';
+                actionsDiv.style.flexShrink = '0';
+                
+                actionsDiv.innerHTML = `
+                    <button class="copy-bookmark" title="Copy to clipboard" style="background: rgba(255,255,255,0.1); border: 1px solid #666; color: #eee; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">📋</button>
+                    <button class="remove-bookmark" title="Remove bookmark" style="background: rgba(255,0,0,0.1); border: 1px solid #f00; color: #f00; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">×</button>
                 `;
-                item.querySelector('.keyword-name').onclick = () => {
+
+                item.appendChild(img);
+                item.appendChild(contentDiv);
+                item.appendChild(actionsDiv);
+
+                contentDiv.onclick = () => {
                     input.value = sentence;
                     generate();
                 };
+                
+                item.querySelector('.copy-bookmark').onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(sentence).then(() => {
+                        const btn = e.target;
+                        btn.textContent = '✓';
+                        setTimeout(() => { btn.textContent = '📋'; }, 1000);
+                    });
+                };
+
                 item.querySelector('.remove-bookmark').onclick = (e) => {
                     e.stopPropagation();
                     removeBookmark(index);
                 };
+                
                 bookmarksList.appendChild(item);
-            });
+            }
         }
 
         function saveBookmark(sentence) {
