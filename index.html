@@ -94,14 +94,54 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        #hero-canvas, #sky-canvas {
+        #hero-canvas {
             width: 100%;
             border-radius: 8px;
             background: #000;
+            aspect-ratio: 1;
         }
 
-        #hero-canvas { aspect-ratio: 1; }
-        #sky-canvas { height: 250px; }
+        .sky-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #sky-canvas {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: block;
+        }
+
+        .play-pause-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            color: white;
+            font-size: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .sky-container:hover .play-pause-overlay {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
 
         .controls {
             display: flex;
@@ -257,7 +297,10 @@ void main() {
             <p style="text-align: center; max-width: 700px; margin: 0 auto 30px;">The sky below is generated from a single <b>2KB</b> compressed string. Decompressed and rendered in real-time, it supports dynamic time of day and atmospheric effects.</p>
             <div class="interactive-example payload-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: stretch;">
                 <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <canvas id="sky-canvas"></canvas>
+                    <div class="sky-container" id="sky-btn">
+                        <canvas id="sky-canvas"></canvas>
+                        <div class="play-pause-overlay" id="sky-overlay">▶</div>
+                    </div>
                     <div class="controls">
                         <div class="slider-row">
                             <label>Time of Day</label>
@@ -436,6 +479,22 @@ void main() {
             document.getElementById('byte-count').innerText = `${SKY_PAYLOAD.length} Bytes`;
             skyTg.init(TexGen.decompress(SKY_PAYLOAD));
 
+            // Sky Animation State
+            let skyAnimating = false;
+            let skyBaseValue = 0;
+            let skyStartTime = 0;
+            const skyOverlay = document.getElementById('sky-overlay');
+            const skyBtn = document.getElementById('sky-btn');
+
+            skyBtn.addEventListener('click', () => {
+                skyAnimating = !skyAnimating;
+                skyOverlay.innerText = skyAnimating ? '⏸' : '▶';
+                if (skyAnimating) {
+                    skyStartTime = performance.now() / 1000;
+                    skyBaseValue = parseFloat(skyTodInput.value);
+                }
+            });
+
             function updateSliders(code) {
                 slidersContainer.innerHTML = '';
                 let hasSliders = false;
@@ -477,7 +536,14 @@ void main() {
             function animate() {
                 const time = performance.now() / 1000;
                 tg.render(time, dynamicUniforms);
-                const skyTod = parseFloat(skyTodInput.value);
+                
+                let skyTod = parseFloat(skyTodInput.value);
+                if (skyAnimating) {
+                    const elapsed = time - skyStartTime;
+                    skyTod = (skyBaseValue + (elapsed / 10)) % 1.0;
+                    skyTodInput.value = skyTod;
+                }
+                
                 const sunY = Math.sin(skyTod * Math.PI * 2 - Math.PI/2);
                 skyTg.render(time, { u_tod: skyTod, u_sunY: sunY });
                 requestAnimationFrame(animate);
