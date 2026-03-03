@@ -5,6 +5,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
+const dist = path.resolve(root, 'dist');
+
+// Ensure dist directory exists
+if (!fs.existsSync(dist)) {
+    fs.mkdirSync(dist, { recursive: true });
+}
 
 const corePath = path.resolve(root, 'src/texgen.core.js');
 const core = fs.readFileSync(corePath, 'utf8').trim();
@@ -23,26 +29,29 @@ const umdWrapper = (code) => `${code}
     else { root.TexGen = factory(); }
 }(typeof self !== 'undefined' ? self : this, function () { return TexGen; }));`;
 
-fs.writeFileSync(path.resolve(root, 'texgen.mjs'), esmContent);
-fs.writeFileSync(path.resolve(root, 'texgen.js'), umdWrapper(core));
+fs.writeFileSync(path.resolve(dist, 'texgen.mjs'), esmContent);
+fs.writeFileSync(path.resolve(dist, 'texgen.js'), umdWrapper(core));
+
+// Copy d.ts to dist
+fs.copyFileSync(path.resolve(root, 'texgen.d.ts'), path.resolve(dist, 'texgen.d.ts'));
 
 // 2. Generate Minified Versions
 await esbuild.build({
-    entryPoints: [path.resolve(root, 'texgen.js')],
+    entryPoints: [path.resolve(dist, 'texgen.js')],
     bundle: true,
     minify: true,
-    outfile: path.resolve(root, 'texgen.min.js'),
+    outfile: path.resolve(dist, 'texgen.min.js'),
 });
 
 await esbuild.build({
-    entryPoints: [path.resolve(root, 'texgen.mjs')],
+    entryPoints: [path.resolve(dist, 'texgen.mjs')],
     bundle: true,
     minify: true,
     format: 'esm',
-    outfile: path.resolve(root, 'texgen.min.mjs'),
+    outfile: path.resolve(dist, 'texgen.min.mjs'),
 });
 
-console.log('✅ Distribution files generated.');
+console.log('✅ Distribution files generated in dist/');
 
 // 3. Sync to Examples
 const examples = [
@@ -52,11 +61,11 @@ const examples = [
 
 examples.forEach(ex => {
     const dest = path.resolve(root, `example/${ex}/texgen.js`);
-    fs.copyFileSync(path.resolve(root, 'texgen.js'), dest);
+    fs.copyFileSync(path.resolve(dist, 'texgen.js'), dest);
 });
 
 // Special case for TS gallery (ESM)
-fs.copyFileSync(path.resolve(root, 'texgen.mjs'), path.resolve(root, 'example/typescript_gallery/texgen.mjs'));
-fs.copyFileSync(path.resolve(root, 'texgen.d.ts'), path.resolve(root, 'example/typescript_gallery/texgen.d.ts'));
+fs.copyFileSync(path.resolve(dist, 'texgen.mjs'), path.resolve(root, 'example/typescript_gallery/texgen.mjs'));
+fs.copyFileSync(path.resolve(dist, 'texgen.d.ts'), path.resolve(root, 'example/typescript_gallery/texgen.d.ts'));
 
 console.log(`📦 Synced library to ${examples.length + 1} examples.`);

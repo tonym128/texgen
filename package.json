@@ -2,28 +2,40 @@
   "name": "texgen",
   "version": "1.0.0",
   "description": "A lightweight procedural texture generation library using GLSL.",
-  "main": "texgen.js",
-  "module": "texgen.mjs",
-  "types": "texgen.d.ts",
+  "main": "./dist/texgen.js",
+  "module": "./dist/texgen.mjs",
+  "types": "./dist/texgen.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/texgen.d.ts",
+      "import": "./dist/texgen.mjs",
+      "require": "./dist/texgen.js"
+    }
+  },
   "bin": {
     "texgen": "./bin/cli.js"
   },
   "files": [
-    "texgen.js",
-    "texgen.mjs",
-    "texgen.min.js",
-    "texgen.min.mjs",
-    "texgen.d.ts",
-    "src/texgen.core.js",
-    "bin/cli.js",
+    "dist",
+    "src",
+    "bin",
     "README_LIB.md"
   ],
   "scripts": {
     "build": "make build",
     "test": "npm run build && vitest run",
     "start": "npx http-server -p 8080",
-    "setup": "npm install"
+    "setup": "npm install",
+    "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonym128/texgen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tonym128/texgen/issues"
+  },
+  "homepage": "https://github.com/tonym128/texgen#readme",
   "keywords": [
     "procedural",
     "texture",
