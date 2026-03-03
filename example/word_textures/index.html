@@ -517,7 +517,7 @@
             const result = parser.parse(input.value);
             tg.render(time * 0.001);
             
-            if (isEditorOpen && editorTg && editorTg.shaderText && editorTg.shaderText.includes('u_time')) {
+            if (isEditorOpen && editorTg && editorActiveShader && editorActiveShader.includes('u_time')) {
                 editorTg.render(time * 0.001);
             }
             
@@ -546,6 +546,7 @@
         let isLoadingGallery = false;
         let isEditorOpen = false;
         let editorTg = null;
+        let editorActiveShader = null;
 
         async function openEditor(sentence, originalSeed, originalDataUrl) {
             isEditorOpen = true;
@@ -558,6 +559,7 @@
                 editorTg = new TexGen({ canvas: editorMainCanvas, width: 256, height: 256 });
             }
             const result = parser.parse(`${sentence} seed:${originalSeed}`);
+            editorActiveShader = result.shader;
             editorTg.init(result.shader);
             editorTg.seed = originalSeed;
             editorTg.render(0); // Render initial frame immediately
