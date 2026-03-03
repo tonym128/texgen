@@ -107,7 +107,7 @@
         "ice": "f = fbm(p*5.0, 10.0); c = mix(c, vec3(0.9, 0.95, 1.0), 0.5+f*0.5);",
         "liquid": "f = fbm(p*3.0 + u_time, 10.0); c = mix(c, vec3(0.2, 0.4, 0.8), f);",
         "gas": "f = fbm(p*2.0 + u_time*0.2, 10.0); c = mix(c, vec3(0.7, 1.0, 0.7), f*0.4);",
-        "digital": "vec2 b2 = floor(p*20.0); f = random(b2); c = mix(c, vec3(0.0, f, 0.0), 0.5*f);",
+        "digital": "vec2 gId = floor(p*vec2(30.0, 20.0)); vec2 gUv = fract(p*vec2(30.0, 20.0)); float gR = random(vec2(gId.x, 0.0)); float gSp = 1.0 + gR*2.0; float gDr = fract(p.y*2.0 + u_time*gSp + gR*10.0); float gCh = step(0.5, random(gId + floor(u_time*gSp*5.0))); f = pow(gDr, 3.0) * step(0.2, gUv.x) * step(0.2, gUv.y) * gCh; c = c * f + vec3(f*f*f);",
         "glitch": "float g = random(vec2(floor(p.y*20.0 + u_time), 0.0)); p.x += (g-0.5)*0.1*step(0.9, random(vec2(u_time, 1.0)));",
         "retro": "c = floor(c*4.0)/4.0;",
         "modern": "c = mix(c, vec3(length(c)), 0.8); c *= vec3(1.1, 1.0, 1.2);",

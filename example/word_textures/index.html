@@ -182,6 +182,7 @@
     <aside id="sidebar">
         <div class="sidebar-header">
             <h2>Keywords</h2>
+            <input type="text" id="keyword-search" placeholder="Search keywords..." style="width: 100%; margin-top: 10px; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box; outline: none;">
         </div>
         <div class="sidebar-content" id="sidebar-content">
             <!-- Populated by JS -->
@@ -202,6 +203,7 @@
             <div class="input-group">
                 <input type="text" id="sentence-input" placeholder="e.g. blue noise circle mix rotate seed:42" value="blue noise circle mix rotate seed:42">
                 <button id="generate-btn">Generate</button>
+                <button id="gallery-btn" style="background: #ff9500;">Random Gallery</button>
             </div>
 
             <div class="examples">
@@ -209,18 +211,24 @@
                 <span class="example-btn" data-s="fire smoke lava mix">Lava Fire</span>
                 <span class="example-btn" data-s="blue water ripple fbm">Water Ripples</span>
                 <span class="example-btn" data-s="gold shiny star mirror">Golden Star</span>
-                <span class="example-btn" data-s="digital glitch retro box">Digital Glitch</span>
-                <span class="example-btn" data-s="marble stone blue white swirl">Blue Marble</span>
+                <span class="example-btn" data-s="swirl glitch retro box red digital">Digital Glitch</span>
+                <span class="example-btn" data-s="marble stone blue metal repeat grid">Blue Marble</span>
                 <span class="example-btn" data-s="purple aura energy pulse">Energy Pulse</span>
                 <span class="example-btn" data-s="cyan plasma neon glow">Neon Plasma</span>
                 <span class="example-btn" data-s="flower pink green leaf center">Pink Flower</span>
                 <span class="example-btn" data-s="sun yellow orange hot aura">Burning Sun</span>
-                <span class="example-btn" data-s="matrix digital green code glitch repeat">Matrix Code</span>
+                <span class="example-btn" data-s="green matrix digital pulse blur">Matrix Code</span>
             </div>
         </div>
 
         <div id="debug" class="debug-shader"></div>
     </main>
+
+    <div id="gallery-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:100; overflow-y:auto; padding:20px; box-sizing:border-box;">
+        <button id="close-gallery-btn" style="position:fixed; top:20px; right:20px; z-index:101; background:#f00; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Close Gallery</button>
+        <div id="gallery-grid" style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; max-width:1200px; margin:0 auto; padding-top:40px;"></div>
+        <div id="gallery-loader" style="text-align:center; padding:40px; color:#aaa; width:100%;">Scrolling to generate more...</div>
+    </div>
 
     <script>
         const canvas = document.getElementById('output');
@@ -314,6 +322,24 @@
             };
         });
 
+        const keywordSearch = document.getElementById('keyword-search');
+        keywordSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('.keyword-group').forEach(group => {
+                let hasVisible = false;
+                group.querySelectorAll('.keyword-item').forEach(item => {
+                    const name = item.querySelector('.keyword-name').textContent.toLowerCase();
+                    if (name.includes(term)) {
+                        item.style.display = 'flex';
+                        hasVisible = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                group.style.display = hasVisible ? 'block' : 'none';
+            });
+        });
+
         // Initial generation
         generate();
 
@@ -328,6 +354,107 @@
         canvas.ondblclick = () => {
             debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
         };
+
+        // Random Gallery Logic
+        const galleryBtn = document.getElementById('gallery-btn');
+        const galleryModal = document.getElementById('gallery-modal');
+        const closeGalleryBtn = document.getElementById('close-gallery-btn');
+        const galleryGrid = document.getElementById('gallery-grid');
+        const galleryLoader = document.getElementById('gallery-loader');
+        let isLoadingGallery = false;
+
+        function getRandomSentence() {
+            const keys = Object.keys(parser.words);
+            const validKeys = keys.filter(k => !k.endsWith('_mat') && !k.endsWith('_spatial') && !k.endsWith('_mod'));
+            // Try to make slightly structured random sentences: color + shape + generator + modifier
+            const colors = categories.find(c => c.name === 'COLORS');
+            const shapes = categories.find(c => c.name === 'SHAPES');
+            const generators = categories.find(c => c.name === 'GENERATORS');
+            const modifiers = categories.find(c => c.name === 'MODIFIERS');
+            
+            let sentence = [];
+            const numWords = Math.floor(Math.random() * 3) + 3; // 3 to 5 words
+            for (let i = 0; i < numWords; i++) {
+                sentence.push(validKeys[Math.floor(Math.random() * validKeys.length)]);
+            }
+            return sentence.join(' ');
+        }
+
+        async function loadGalleryImages(count = 10) {
+            if (isLoadingGallery) return;
+            isLoadingGallery = true;
+            for (let i = 0; i < count; i++) {
+                const sentence = getRandomSentence();
+                const result = parser.parse(sentence);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'background:#222; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center; width:148px; cursor:pointer; border:1px solid #333; transition:transform 0.2s, border-color 0.2s;';
+                itemDiv.onmouseover = () => { itemDiv.style.transform = 'scale(1.05)'; itemDiv.style.borderColor = '#007aff'; };
+                itemDiv.onmouseout = () => { itemDiv.style.transform = 'scale(1)'; itemDiv.style.borderColor = '#333'; };
+                
+                const img = document.createElement('img');
+                img.width = 128;
+                img.height = 128;
+                img.style.borderRadius = '4px';
+                img.style.marginBottom = '8px';
+                img.style.background = '#000';
+                
+                const label = document.createElement('div');
+                label.style.cssText = 'font-size:0.7rem; color:#aaa; text-align:center; word-break:break-word; line-height:1.2;';
+                label.textContent = sentence;
+
+                itemDiv.appendChild(img);
+                itemDiv.appendChild(label);
+                galleryGrid.appendChild(itemDiv);
+
+                itemDiv.onclick = () => {
+                    galleryModal.style.display = 'none';
+                    input.value = sentence;
+                    generate();
+                };
+
+                // Use async bake if available to avoid freezing UI
+                try {
+                    let dataUrl;
+                    if (TexGen.bakeAsync) {
+                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 128, height: 128, seed: result.seed !== null ? result.seed : Math.random()*100 });
+                    } else {
+                        const tempTg = new TexGen({ width: 128, height: 128 });
+                        dataUrl = tempTg.bake(result.shader);
+                    }
+                    if (dataUrl) {
+                        img.src = dataUrl;
+                    } else {
+                        throw new Error("No dataUrl returned");
+                    }
+                } catch(e) {
+                    console.error("Gallery generation error", e);
+                    itemDiv.remove();
+                    i--; // Try again to fulfill the count
+                }
+            }
+            isLoadingGallery = false;
+        }
+
+        galleryBtn.onclick = () => {
+            galleryModal.style.display = 'block';
+            if (galleryGrid.children.length === 0) {
+                loadGalleryImages(100);
+            }
+        };
+
+        closeGalleryBtn.onclick = () => {
+            galleryModal.style.display = 'none';
+        };
+
+        // Infinite Scroll using IntersectionObserver
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && galleryModal.style.display === 'block') {
+                loadGalleryImages(20);
+            }
+        }, { root: galleryModal, rootMargin: '400px' });
+        
+        observer.observe(galleryLoader);
 
     </script>
 </body>
