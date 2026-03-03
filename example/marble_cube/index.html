@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TexGen - 3D Marble Cube</title>
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        
+        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        
+        /* 3D Canvas */
+        #webgl-canvas { display: block; width: 100%; height: 100%; }
+        
+        /* UI Overlays */
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; font-weight: bold; color: #00ffcc; z-index: 100; text-shadow: 0 0 10px #00ffcc; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .hud { position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
+        .instructions { position: absolute; bottom: 20px; left: 20px; font-size: 16px; color: #ccc; pointer-events: none; text-shadow: 1px 1px 0 #000; z-index: 10; }
+
+        #finish-banner {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #00ffcc;
+            padding: 40px; border-radius: 20px; text-align: center;
+            display: none; z-index: 200; backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+        }
+        #finish-banner h1 { margin: 0; font-size: 48px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        #finish-banner p { font-size: 24px; margin: 20px 0; }
+        #leaderboard { margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
+        #leaderboard h3 { margin: 0 0 10px 0; font-size: 18px; color: #00ffcc; }
+        #leaderboard ol { margin: 0; padding-left: 20px; color: #ccc; }
+        #restart-btn {
+            margin-top: 20px; padding: 10px 20px; font-size: 18px; font-weight: bold;
+            background: #00ffcc; border: none; color: #000; border-radius: 5px; cursor: pointer;
+        }
+
+        #start-btn {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 15px 30px; font-size: 24px; font-weight: bold;
+            background: rgba(0, 255, 204, 0.2); border: 2px solid #00ffcc;
+            color: #fff; border-radius: 10px; cursor: pointer;
+            backdrop-filter: blur(5px); display: none; z-index: 110;
+        }
+        #start-btn:active { background: rgba(0, 255, 204, 0.4); transform: translate(-50%, -50%) scale(0.95); }
+
+        @media (pointer: coarse) {
+            .instructions { display: none; }
+        }
+    </style>
+    <!-- Include Three.js for the 3D rendering engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.148.0/three.min.js"></script>
+    <!-- Include Cannon.js for 3D physics (UMD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading">Baking Procedural Textures...</div>
+        <button id="start-btn">Tap to Start (Enable Tilt)</button>
+        <div id="finish-banner">
+            <h1>CONGRATULATIONS!</h1>
+            <p id="time-display"></p>
+            <div id="stats-display" style="margin: 15px 0; color: #aaa; font-size: 18px; line-height: 1.6;"></div>
+            <div id="leaderboard">
+                <h3>Best Times</h3>
+                <ol id="leaderboard-list"></ol>
+            </div>
+            <button id="restart-btn">Play Again</button>
+        </div>
+        <div id="fail-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(40, 0, 0, 0.9); border: 2px solid #ff4400; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 68, 0, 0.3);">
+            <h1 style="margin: 0; font-size: 48px; color: #ff4400; text-shadow: 0 0 10px #ff4400;">GRAVITY SUCKS!</h1>
+            <p style="font-size: 24px; margin: 20px 0;">The marble has escaped the cube...</p>
+            <button id="retry-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 18px; font-weight: bold; background: #ff4400; border: none; color: #fff; border-radius: 5px; cursor: pointer;">Try Again</button>
+        </div>
+        <div id="rage-banner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(60, 0, 0, 0.9); border: 2px solid #ff0000; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 200; backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);">
+            <h1 style="margin: 0; font-size: 48px; color: #ff0000; text-shadow: 0 0 10px #ff0000;">Rage Quit!</h1>
+            <p style="font-size: 24px; margin: 20px 0;">You destroyed the maze in a fit of rage.</p>
+            <button id="rage-retry-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 18px; font-weight: bold; background: #ff0000; border: none; color: #fff; border-radius: 5px; cursor: pointer;">Calm Down & Try Again</button>
+        </div>
+        <div class="hud">MARBLE CUBE</div>
+        <div class="instructions">Move mouse or tilt device to roll the marble</div>
+        <canvas id="webgl-canvas"></canvas>
+    </div>
+
+    <!-- Include TexGen library -->
+    <script src="../../texgen.js"></script>
+    <script src="../../src/texgen.words.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
