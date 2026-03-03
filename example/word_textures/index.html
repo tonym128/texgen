@@ -218,6 +218,7 @@
                 <span class="example-btn" data-s="flower pink green leaf center">Pink Flower</span>
                 <span class="example-btn" data-s="sun yellow orange hot aura">Burning Sun</span>
                 <span class="example-btn" data-s="green matrix digital pulse blur">Matrix Code</span>
+                <span class="example-btn" data-s="liquid gear ceil">Molten Machinery</span>
             </div>
         </div>
 
@@ -228,6 +229,23 @@
         <button id="close-gallery-btn" style="position:fixed; top:20px; right:20px; z-index:101; background:#f00; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Close Gallery</button>
         <div id="gallery-grid" style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; max-width:1200px; margin:0 auto; padding-top:40px;"></div>
         <div id="gallery-loader" style="text-align:center; padding:40px; color:#aaa; width:100%;">Scrolling to generate more...</div>
+    </div>
+
+    <div id="editor-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.98); z-index:200; overflow-y:auto; padding:20px; box-sizing:border-box; color: #fff;">
+        <button id="close-editor-btn" style="position:fixed; top:20px; right:20px; z-index:201; background:#f00; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Close Editor</button>
+        <div style="max-width:1200px; margin:0 auto; padding-top:40px; text-align:center;">
+            <h2 id="editor-sentence-title" style="color: var(--primary); font-family: monospace; margin-bottom: 20px;"></h2>
+            
+            <div style="display:flex; justify-content:center; margin-bottom: 40px; gap: 40px; align-items: center;">
+                <div style="text-align:center;">
+                    <img id="editor-main-img" width="256" height="256" style="border-radius:8px; border:2px solid #555;">
+                    <div id="editor-main-seed" style="margin-top:10px; color:#aaa; font-family:monospace;"></div>
+                </div>
+            </div>
+
+            <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Seeds 1 - 100</h3>
+            <div id="editor-seeds-grid" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center;"></div>
+        </div>
     </div>
 
     <script>
@@ -361,7 +379,94 @@
         const closeGalleryBtn = document.getElementById('close-gallery-btn');
         const galleryGrid = document.getElementById('gallery-grid');
         const galleryLoader = document.getElementById('gallery-loader');
+        
+        const editorModal = document.getElementById('editor-modal');
+        const closeEditorBtn = document.getElementById('close-editor-btn');
+        const editorSentenceTitle = document.getElementById('editor-sentence-title');
+        const editorMainImg = document.getElementById('editor-main-img');
+        const editorMainSeed = document.getElementById('editor-main-seed');
+        const editorSeedsGrid = document.getElementById('editor-seeds-grid');
+        
         let isLoadingGallery = false;
+        let isEditorOpen = false;
+
+        async function openEditor(sentence, originalSeed, originalDataUrl) {
+            isEditorOpen = true;
+            editorModal.style.display = 'block';
+            editorSentenceTitle.textContent = sentence;
+            editorMainImg.src = originalDataUrl;
+            editorMainSeed.textContent = "Original Seed: " + originalSeed.toFixed(2);
+            
+            editorSeedsGrid.innerHTML = ''; // clear grid
+            
+            let matchCount = 0;
+
+            // Generate seeds 1 - 100
+            for (let i = 1; i <= 100; i++) {
+                if (!isEditorOpen) break; // stop if closed
+
+                const result = parser.parse(`${sentence} seed:${i}`);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'background:#222; padding:5px; border-radius:4px; display:flex; flex-direction:column; align-items:center; width:80px;';
+                
+                const img = document.createElement('img');
+                img.width = 64;
+                img.height = 64;
+                img.style.borderRadius = '4px';
+                img.style.background = '#000';
+                img.style.marginBottom = '4px';
+                
+                const label = document.createElement('div');
+                label.style.cssText = 'font-size:0.6rem; color:#aaa; font-family:monospace;';
+                label.textContent = `seed:${i}`;
+
+                itemDiv.appendChild(img);
+                itemDiv.appendChild(label);
+                editorSeedsGrid.appendChild(itemDiv);
+
+                try {
+                    let dataUrl;
+                    if (TexGen.bakeAsync) {
+                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 64, height: 64, seed: result.seed !== null ? result.seed : i });
+                    } else {
+                        const tempTg = new TexGen({ width: 64, height: 64 });
+                        dataUrl = tempTg.bake(result.shader);
+                    }
+                    if (dataUrl && isEditorOpen) {
+                        img.src = dataUrl;
+                        
+                        // To properly compare, we need to ensure the originalDataUrl is also 64x64, 
+                        // but since the original is 128x128, we should compare the first 5 generated images to each other
+                        // or just generate the original at 64x64. Let's compare them to the first generated image.
+                        if (i === 1) {
+                            itemDiv._firstDataUrl = dataUrl;
+                        } else if (i <= 5) {
+                            const firstItem = editorSeedsGrid.children[0];
+                            if (firstItem && firstItem._firstDataUrl === dataUrl) {
+                                matchCount++;
+                            }
+                        }
+                        
+                        if (i === 5 && matchCount === 4) { // All first 5 are identical (1 + 4 matches)
+                            const info = document.createElement('div');
+                            info.style.cssText = 'width: 100%; text-align: center; color: #888; padding: 20px;';
+                            info.textContent = 'Texture does not use randomness. Stopped generating duplicate seeds.';
+                            editorSeedsGrid.appendChild(info);
+                            break;
+                        }
+                    }
+                } catch(e) {
+                    console.error("Editor generation error", e);
+                    itemDiv.remove();
+                }
+            }
+        }
+
+        closeEditorBtn.onclick = () => {
+            editorModal.style.display = 'none';
+            isEditorOpen = false;
+        };
 
         function getRandomSentence() {
             const keys = Object.keys(parser.words);
@@ -407,17 +512,17 @@
                 itemDiv.appendChild(label);
                 galleryGrid.appendChild(itemDiv);
 
+                let seedToUse = result.seed !== null ? result.seed : Math.random()*100;
+
                 itemDiv.onclick = () => {
-                    galleryModal.style.display = 'none';
-                    input.value = sentence;
-                    generate();
+                    openEditor(sentence, seedToUse, img.src);
                 };
 
                 // Use async bake if available to avoid freezing UI
                 try {
                     let dataUrl;
                     if (TexGen.bakeAsync) {
-                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 128, height: 128, seed: result.seed !== null ? result.seed : Math.random()*100 });
+                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 128, height: 128, seed: seedToUse });
                     } else {
                         const tempTg = new TexGen({ width: 128, height: 128 });
                         dataUrl = tempTg.bake(result.shader);
