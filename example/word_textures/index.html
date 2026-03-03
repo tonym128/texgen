@@ -228,6 +228,14 @@
 
         <div class="canvas-container">
             <canvas id="output"></canvas>
+            <div id="status-indicators" style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 8px; pointer-events: none;">
+                <div id="anim-indicator" style="display: none; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: #fff; align-items: center; gap: 5px; border: 1px solid #444;" title="This texture is animated">
+                    <span>⏱️</span> Animated
+                </div>
+                <div id="seed-indicator" style="display: none; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: #fff; align-items: center; gap: 5px; border: 1px solid #444;" title="This texture will change with different seeds">
+                    <span>🎲</span> Randomized
+                </div>
+            </div>
         </div>
 
         <div class="controls">
@@ -279,7 +287,7 @@
             
             <div style="display:flex; justify-content:center; margin-bottom: 40px; gap: 40px; align-items: center;">
                 <div style="text-align:center;">
-                    <img id="editor-main-img" width="256" height="256" style="border-radius:8px; border:2px solid #555;">
+                    <canvas id="editor-main-canvas" width="256" height="256" style="border-radius:8px; border:2px solid #555; background:#000;"></canvas>
                     <div id="editor-main-seed" style="margin-top:10px; color:#aaa; font-family:monospace;"></div>
                 </div>
             </div>
@@ -297,6 +305,8 @@
         const sidebarContent = document.getElementById('sidebar-content');
         const seedSlider = document.getElementById('seed-slider');
         const seedDisplay = document.getElementById('seed-display');
+        const animIndicator = document.getElementById('anim-indicator');
+        const seedIndicator = document.getElementById('seed-indicator');
 
         const tg = new TexGen({ canvas: canvas, width: 512, height: 512 });
         const parser = new TexGen.Words();
@@ -320,6 +330,14 @@
             try {
                 tg.bake(result.shader);
                 debugEl.textContent = result.shader;
+                
+                // Check if animated or randomized
+                const isAnimated = result.shader.includes('u_time');
+                const isRandomized = /random|noise|fbm|voronoi/.test(result.shader);
+                
+                animIndicator.style.display = isAnimated ? 'flex' : 'none';
+                seedIndicator.style.display = isRandomized ? 'flex' : 'none';
+                
             } catch (e) {
                 console.error(e);
             }
@@ -498,6 +516,11 @@
         function animate(time) {
             const result = parser.parse(input.value);
             tg.render(time * 0.001);
+            
+            if (isEditorOpen && editorTg && editorTg.shaderText && editorTg.shaderText.includes('u_time')) {
+                editorTg.render(time * 0.001);
+            }
+            
             requestAnimationFrame(animate);
         }
         requestAnimationFrame(animate);
@@ -516,19 +539,28 @@
         const editorModal = document.getElementById('editor-modal');
         const closeEditorBtn = document.getElementById('close-editor-btn');
         const editorSentenceTitle = document.getElementById('editor-sentence-title');
-        const editorMainImg = document.getElementById('editor-main-img');
+        const editorMainCanvas = document.getElementById('editor-main-canvas');
         const editorMainSeed = document.getElementById('editor-main-seed');
         const editorSeedsGrid = document.getElementById('editor-seeds-grid');
         
         let isLoadingGallery = false;
         let isEditorOpen = false;
+        let editorTg = null;
 
         async function openEditor(sentence, originalSeed, originalDataUrl) {
             isEditorOpen = true;
             editorModal.style.display = 'block';
             editorSentenceTitle.textContent = sentence;
-            editorMainImg.src = originalDataUrl;
             editorMainSeed.textContent = "Original Seed: " + originalSeed.toFixed(2);
+            
+            // Set up main canvas rendering
+            if (!editorTg) {
+                editorTg = new TexGen({ canvas: editorMainCanvas, width: 256, height: 256 });
+            }
+            const result = parser.parse(`${sentence} seed:${originalSeed}`);
+            editorTg.init(result.shader);
+            editorTg.seed = originalSeed;
+            editorTg.render(0); // Render initial frame immediately
             
             editorSeedsGrid.innerHTML = ''; // clear grid
             
@@ -632,10 +664,23 @@
                 const result = parser.parse(sentence);
                 
                 const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'background:#222; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center; width:148px; cursor:pointer; border:1px solid #333; transition:transform 0.2s, border-color 0.2s;';
+                itemDiv.style.cssText = 'background:#222; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center; width:148px; cursor:pointer; border:1px solid #333; transition:transform 0.2s, border-color 0.2s; position:relative;';
                 itemDiv.onmouseover = () => { itemDiv.style.transform = 'scale(1.05)'; itemDiv.style.borderColor = '#007aff'; };
                 itemDiv.onmouseout = () => { itemDiv.style.transform = 'scale(1)'; itemDiv.style.borderColor = '#333'; };
                 
+                // Indicators
+                const isAnimated = result.shader.includes('u_time');
+                const isRandomized = /random|noise|fbm|voronoi/.test(result.shader);
+                
+                const indicatorDiv = document.createElement('div');
+                indicatorDiv.style.cssText = 'position:absolute; top:15px; right:15px; display:flex; gap:4px; pointer-events:none;';
+                if (isAnimated) {
+                    indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Animated">⏱️</div>';
+                }
+                if (isRandomized) {
+                    indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Randomized">🎲</div>';
+                }
+
                 const img = document.createElement('img');
                 img.width = 128;
                 img.height = 128;
@@ -647,6 +692,7 @@
                 label.style.cssText = 'font-size:0.7rem; color:#aaa; text-align:center; word-break:break-word; line-height:1.2;';
                 label.textContent = sentence;
 
+                itemDiv.appendChild(indicatorDiv);
                 itemDiv.appendChild(img);
                 itemDiv.appendChild(label);
                 galleryGrid.appendChild(itemDiv);
