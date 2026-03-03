@@ -130,7 +130,7 @@
         input[type="text"]:focus {
             border-color: var(--primary);
         }
-        button#generate-btn {
+        .input-group button {
             padding: 12px 25px;
             border-radius: 8px;
             border: none;
@@ -139,7 +139,10 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: opacity 0.2s;
+        }
+        .input-group button:hover {
+            opacity: 0.8;
         }
         .examples {
             display: flex;
@@ -203,7 +206,14 @@
             <div class="input-group">
                 <input type="text" id="sentence-input" placeholder="e.g. blue noise circle mix rotate seed:42" value="blue noise circle mix rotate seed:42">
                 <button id="generate-btn">Generate</button>
+                <button id="random-btn" style="background: #28a745;">Random</button>
                 <button id="gallery-btn" style="background: #ff9500;">Random Gallery</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; background: #222; padding: 10px 15px; border-radius: 8px; border: 1px solid #333;">
+                <label for="seed-slider" style="font-weight: bold; color: #aaa; font-size: 14px; min-width: 50px;">Seed:</label>
+                <input type="range" id="seed-slider" min="1" max="100" step="1" value="42" style="flex: 1; cursor: pointer;">
+                <span id="seed-display" style="font-family: monospace; color: var(--primary); font-size: 16px; min-width: 30px; text-align: right;">42</span>
             </div>
 
             <div class="examples">
@@ -254,6 +264,8 @@
         const btn = document.getElementById('generate-btn');
         const debugEl = document.getElementById('debug');
         const sidebarContent = document.getElementById('sidebar-content');
+        const seedSlider = document.getElementById('seed-slider');
+        const seedDisplay = document.getElementById('seed-display');
 
         const tg = new TexGen({ canvas: canvas, width: 512, height: 512 });
         const parser = new TexGen.Words();
@@ -264,7 +276,15 @@
             
             tg.width = result.width;
             tg.height = result.height;
-            if (result.seed !== null) tg.seed = result.seed;
+            if (result.seed !== null) {
+                tg.seed = result.seed;
+                seedSlider.value = result.seed;
+                seedDisplay.textContent = result.seed;
+            } else {
+                // If no seed in sentence, keep current global seed but ensure slider matches it (or generates a random one if we want)
+                seedSlider.value = Math.floor(tg.seed);
+                seedDisplay.textContent = Math.floor(tg.seed);
+            }
 
             try {
                 tg.bake(result.shader);
@@ -273,6 +293,24 @@
                 console.error(e);
             }
         }
+
+        seedSlider.addEventListener('input', (e) => {
+            const newSeed = e.target.value;
+            seedDisplay.textContent = newSeed;
+            tg.seed = parseInt(newSeed);
+            
+            // Sync input text by updating or appending the seed modifier
+            let currentText = input.value;
+            if (/seed:\d+/.test(currentText)) {
+                currentText = currentText.replace(/seed:\d+/, `seed:${newSeed}`);
+            } else {
+                currentText = currentText.trim() + ` seed:${newSeed}`;
+            }
+            input.value = currentText;
+            
+            // Re-generate to ensure parsing picks up other changes if any
+            generate();
+        });
 
         // Simplest Example Helper
         function getSimpleExample(word, category) {
@@ -484,6 +522,12 @@
             }
             return sentence.join(' ');
         }
+
+        const randomBtn = document.getElementById('random-btn');
+        randomBtn.onclick = () => {
+            input.value = getRandomSentence();
+            generate();
+        };
 
         async function loadGalleryImages(count = 10) {
             if (isLoadingGallery) return;

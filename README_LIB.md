@@ -82,6 +82,43 @@ tg.init(`#version 300 es
 `);
 ```
 
+### 4. Natural Language Generation (TexGen Words)
+
+TexGen includes an optional addon (`src/texgen.words.js`) that allows you to generate shaders using a vocabulary of 256 words.
+
+First, include the addon after the main library:
+```html
+<script src="texgen.js"></script>
+<script src="src/texgen.words.js"></script>
+```
+
+Then parse sentences into textures:
+```javascript
+// 1. Initialize the Word Parser
+const parser = new TexGen.Words();
+
+// 2. Parse a sentence into a shader
+const sentence = "blue water ripple fbm seed:42";
+const result = parser.parse(sentence);
+
+// 3. Initialize TexGen and bake
+const tg = new TexGen({ width: 512, height: 512 });
+
+if (result.seed !== null) tg.seed = result.seed;
+
+// Returns a Data URL by default
+const dataUrl = tg.bake(result.shader);
+
+// Using Async Web Workers for background generation
+const asyncDataUrl = await TexGen.bakeAsync(result.shader, { 
+    width: 256, 
+    height: 256, 
+    seed: result.seed || Math.random() * 100 
+});
+```
+
+The parsed `result` object contains `shader` (the GLSL code), `seed` (if specified), `width`, and `height`.
+
 ## Built-in GLSL Utilities
 
 - `vUv` (vec2): Normalized pixel coordinates.
