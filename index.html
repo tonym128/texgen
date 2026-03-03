@@ -221,6 +221,22 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 255, 204, 0.1);
         }
 
+        .demo-stats {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .demo-stats span {
+            background: rgba(122, 162, 247, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
         .btn {
             display: inline-block;
             padding: 8px 16px;
@@ -302,7 +318,7 @@
         <section class="hero">
             <div class="hero-text">
                 <h2>Visuals with code, not bandwidth.</h2>
-                <p>TexGen is a small (~15kb) JavaScript library that leverages WebGL shaders to create high-quality, procedural textures on the fly. Whether you need static baked images or real-time animated backgrounds, TexGen provides the tools to build them.</p>
+                <p><strong>TexGen (~15kb):</strong> A small JavaScript library that leverages WebGL shaders to create high-quality, procedural textures on the fly. Whether you need static baked images or real-time animated backgrounds, TexGen provides the tools to build them.</p>
                 <ul class="feature-list">
                     <li>Built-in Noise, FBM, and Voronoi functions</li>
                     <li>Static baking to PNG/DataURL at any resolution</li>
@@ -310,6 +326,14 @@
                     <li>Support for PBR (Physically Based Rendering) maps</li>
                     <li>High-performance, GPU-accelerated generation</li>
                 </ul>
+                <p><strong>TexGen Words (~20kb):</strong> An addon to TexGen to describe your textures in plain English. This powerful addon provides a natural language interface to combine complex effects without writing code:</p>
+                <ul class="feature-list">
+                    <li>150+ keywords across 8 specialized categories</li>
+                    <li>Automatic GLSL synthesis and boilerplate injection</li>
+                    <li>Support for custom seeds, resolution, and animation</li>
+                    <li>Zero-GLSL knowledge required for procedural art</li>
+                </ul>
+                <p>Instantly turn phrases like <em>"blue fire spiral warp"</em> or <em>"gold neon glowing lava"</em> into high-performance GPU shaders.</p>
             </div>
             <div class="interactive-example">
                 <canvas id="hero-canvas" width="512" height="512"></canvas>
@@ -387,55 +411,15 @@ void main() {
                     <div>
                         <h3>TypeScript Gallery</h3>
                         <p>A modern technical showcase of type-safe baking, real-time animation, and compressed payloads.</p>
+                        <div class="demo-stats"><span>5 Textures</span><span>1.1 KB Payload</span></div>
                     </div>
                     <div class="btn">View Gallery</div>
-                </a>
-                <a href="example/platformer/index.html" class="demo-card">
-                    <div>
-                        <h3>Ultimate Platformer</h3>
-                        <p>A 2D game where every block, enemy, and background is procedurally generated at runtime.</p>
-                    </div>
-                    <div class="btn">Play Now</div>
-                </a>
-                <a href="example/maze3d/index.html" class="demo-card">
-                    <div>
-                        <h3>3D Maze Explorer</h3>
-                        <p>A first-person explorer featuring real-time animated textures on walls, floors, and ceilings.</p>
-                    </div>
-                    <div class="btn">Explore 3D</div>
-                </a>
-                <a href="example/marble_roller/index.html" class="demo-card">
-                    <div>
-                        <h3>Marble Roller</h3>
-                        <p>An orthographic 2.5D physics game with procedural marble, floor tiles, and environmental hazards.</p>
-                    </div>
-                    <div class="btn">Start Rolling</div>
-                </a>
-                <a href="example/flight_sim/index.html" class="demo-card">
-                    <div>
-                        <h3>Flight Sim</h3>
-                        <p>Fly over an endless procedural landscape with an animated day/night cycle, rendered from compressed shaders.</p>
-                    </div>
-                    <div class="btn">Take Flight</div>
-                </a>
-                <a href="example/card_roguelike/index.html" class="demo-card">
-                    <div>
-                        <h3>Card Roguelike</h3>
-                        <p>A procedural UI demo where every card's artwork and ornate frame is uniquely generated using seeds.</p>
-                    </div>
-                    <div class="btn">Play Cards</div>
-                </a>
-                <a href="example/solitaire/index.html" class="demo-card">
-                    <div>
-                        <h3>Procedural Solitaire</h3>
-                        <p>A fully functional Klondike Solitaire game featuring a procedural felt table, ornate card backs, and subtle paper textures.</p>
-                    </div>
-                    <div class="btn">Play Solitaire</div>
                 </a>
                 <a href="example/texture_streaming/index.html" class="demo-card">
                     <div>
                         <h3>Texture Streaming</h3>
                         <p>Infinite procedural world generation using asynchronous Web Workers and OffscreenCanvas.</p>
+                        <div class="demo-stats"><span>1 Texture</span><span>1.6 KB Payload</span></div>
                     </div>
                     <div class="btn">Explore World</div>
                 </a>
@@ -443,8 +427,65 @@ void main() {
                     <div>
                         <h3>Multi-Pass Composition</h3>
                         <p>Advanced visual effects achieved by chaining multiple TexGen instances for post-processing.</p>
+                        <div class="demo-stats"><span>3 Textures</span><span>1.5 KB Payload</span></div>
                     </div>
                     <div class="btn">View Effects</div>
+                </a>
+                <a href="example/platformer/index.html" class="demo-card">
+                    <div>
+                        <h3>Ultimate Platformer</h3>
+                        <p>A 2D game where every block, enemy, and background is procedurally generated at runtime.</p>
+                        <div class="demo-stats"><span>19 Textures</span><span>5.3 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Play Now</div>
+                </a>
+                <a href="example/maze3d/index.html" class="demo-card">
+                    <div>
+                        <h3>3D Maze Explorer</h3>
+                        <p>A first-person explorer featuring real-time animated textures on walls, floors, and ceilings.</p>
+                        <div class="demo-stats"><span>8 Textures</span><span>1.6 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Explore 3D</div>
+                </a>
+                <a href="example/marble_cube/index.html" class="demo-card">
+                    <div>
+                        <h3>3D Marble Cube</h3>
+                        <p>Navigate a 3D cube by tilting and rolling through portals and procedural mazes on every face.</p>
+                        <div class="demo-stats"><span>6 Textures</span><span>1.7 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Enter Cube</div>
+                </a>
+                <a href="example/marble_roller/index.html" class="demo-card">
+                    <div>
+                        <h3>Marble Roller</h3>
+                        <p>An orthographic 2.5D physics game with procedural marble, floor tiles, and environmental hazards.</p>
+                        <div class="demo-stats"><span>5 Textures</span><span>1.8 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Start Rolling</div>
+                </a>
+                <a href="example/flight_sim/index.html" class="demo-card">
+                    <div>
+                        <h3>Flight Sim</h3>
+                        <p>Fly over an endless procedural landscape with an animated day/night cycle, rendered from compressed shaders.</p>
+                        <div class="demo-stats"><span>5 Textures</span><span>3.3 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Take Flight</div>
+                </a>
+                <a href="example/card_roguelike/index.html" class="demo-card">
+                    <div>
+                        <h3>Card Roguelike</h3>
+                        <p>A procedural UI demo where every card's artwork and ornate frame is uniquely generated using seeds.</p>
+                        <div class="demo-stats"><span>19 Textures</span><span>4.2 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Play Cards</div>
+                </a>
+                <a href="example/solitaire/index.html" class="demo-card">
+                    <div>
+                        <h3>Procedural Solitaire</h3>
+                        <p>A fully functional Klondike Solitaire game featuring a procedural felt table, ornate card backs, and subtle paper textures.</p>
+                        <div class="demo-stats"><span>3 Textures</span><span>1.2 KB Payload</span></div>
+                    </div>
+                    <div class="btn">Play Solitaire</div>
                 </a>
             </div>
         </section>

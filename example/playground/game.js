@@ -202,6 +202,61 @@ log("Sobel normals rendered.");`
     }
 ];
 
+const WORDS_EXAMPLES = [
+    {
+        id: 'words_init',
+        name: 'new TexGen.Words()',
+        desc: 'Creates a natural language parser. It translates a string of keywords into a functional GLSL shader by looking up predefined snippets.',
+        code: `const parser = new TexGen.Words();
+const result = parser.parse("red circle");
+
+log("Parsed sentence: 'red circle'");
+log("Generated Shader:");
+log(result.shader);`
+    },
+    {
+        id: 'words_bake',
+        name: 'Baking from Words',
+        desc: 'You can pass the output of the Words parser directly into the TexGen bake or init methods to generate a visual texture.',
+        code: `const parser = new TexGen.Words();
+const tg = new TexGen({ width: 256, height: 256 });
+
+const sentence = "blue fire spiral warp";
+const result = parser.parse(sentence);
+
+log("Generating texture for: " + sentence);
+const url = tg.bake(result.shader);
+
+const img = new Image();
+img.src = url;
+document.getElementById('canvas-container').innerHTML = "";
+document.getElementById('canvas-container').appendChild(img);`
+    },
+    {
+        id: 'words_complex',
+        name: 'Complex Composition',
+        desc: 'Combine multiple categories (Colors, Shapes, Generators, Operations, Modifiers, Spatial) to create intricate procedural art.',
+        code: `const parser = new TexGen.Words();
+const tg = new TexGen({ width: 512, height: 512 });
+
+// "lava" creates the generator
+// "vortex" adds spatial distortion
+// "gold" tints the highlights
+// "neon" boosts brightness
+const sentence = "lava vortex gold neon glow";
+const result = parser.parse(sentence);
+
+log("Synthesizing: " + sentence);
+const url = tg.bake(result.shader);
+
+const img = new Image();
+img.src = url;
+img.style.width = "100%";
+document.getElementById('canvas-container').innerHTML = "";
+document.getElementById('canvas-container').appendChild(img);`
+    }
+];
+
 class Playground {
     constructor() {
         this.navList = document.getElementById('nav-list');
@@ -246,6 +301,24 @@ class Playground {
         this.navList.appendChild(header);
 
         API_EXAMPLES.forEach(ex => {
+            const el = document.createElement('div');
+            el.className = 'nav-item';
+            el.innerHTML = `<h3>${ex.name}</h3><p>${ex.desc.substring(0, 60)}...</p>`;
+            el.onclick = () => this.loadExample(ex);
+            this.navList.appendChild(el);
+        });
+
+        // TexGen Words
+        const wordsHeader = document.createElement('div');
+        wordsHeader.style.padding = '25px 20px 5px';
+        wordsHeader.style.fontSize = '0.75rem';
+        wordsHeader.style.fontWeight = 'bold';
+        wordsHeader.style.color = '#94a3b8';
+        wordsHeader.style.letterSpacing = '1px';
+        wordsHeader.innerText = 'TEXGEN WORDS (ADDON)';
+        this.navList.appendChild(wordsHeader);
+
+        WORDS_EXAMPLES.forEach(ex => {
             const el = document.createElement('div');
             el.className = 'nav-item';
             el.innerHTML = `<h3>${ex.name}</h3><p>${ex.desc.substring(0, 60)}...</p>`;
