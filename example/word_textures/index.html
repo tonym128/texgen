@@ -134,6 +134,42 @@
         .input-group {
             display: flex;
             gap: 10px;
+            position: relative;
+        }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 130px; /* Space for buttons */
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            z-index: 1000;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .autocomplete-item:hover, .autocomplete-item.selected {
+            background: var(--primary);
+            color: white;
+        }
+        .autocomplete-category {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            text-transform: uppercase;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
         }
         input[type="text"] {
             flex: 1;
@@ -240,7 +276,8 @@
 
         <div class="controls">
             <div class="input-group">
-                <input type="text" id="sentence-input" placeholder="e.g. blue noise circle mix rotate seed:42" value="blue noise circle mix rotate seed:42">
+                <input type="text" id="sentence-input" placeholder="e.g. blue noise circle mix rotate seed:42" value="blue noise circle mix rotate seed:42" autocomplete="off">
+                <div id="autocomplete-results" class="autocomplete-list"></div>
                 <button id="generate-btn">Generate</button>
                 <button id="save-btn" style="background: #5856d6;">Save</button>
                 <button id="random-btn" style="background: #28a745;">Random</button>
@@ -312,6 +349,102 @@
         const tg = new TexGen({ canvas: canvas, width: 512, height: 512 });
         const parser = new TexGen.Words();
 
+        // Categorized Words (based on 32-word blocks in src)
+        const categories = [
+            { name: 'COLORS', start: 0, end: 32 },
+            { name: 'SHAPES', start: 32, end: 64 },
+            { name: 'GENERATORS', start: 64, end: 96 },
+            { name: 'OPERATIONS', start: 96, end: 128 },
+            { name: 'MODIFIERS', start: 128, end: 160 },
+            { name: 'SPATIAL', start: 160, end: 192 },
+            { name: 'MATERIALS', start: 192, end: 224 },
+            { name: 'FLOW', start: 224, end: 256 }
+        ];
+
+        const allWords = Object.keys(parser.words);
+
+        const autocompleteResults = document.getElementById('autocomplete-results');
+        
+        // Map words to categories for autocomplete
+        const keywordMap = [];
+        categories.forEach(cat => {
+            const words = allWords.slice(cat.start, cat.end);
+            words.forEach(w => {
+                if (w) keywordMap.push({ word: w.replace(/_(mat|spatial|mod)$/, ''), category: cat.name });
+            });
+        });
+
+        let selectedIndex = -1;
+
+        function updateAutocomplete() {
+            const val = input.value;
+            const words = val.split(/[\s,]+/);
+            const lastWord = words[words.length - 1].toLowerCase();
+
+            if (!lastWord) {
+                autocompleteResults.style.display = 'none';
+                return;
+            }
+
+            const matches = keywordMap.filter(k => k.word.startsWith(lastWord)).slice(0, 10);
+            
+            if (matches.length > 0) {
+                autocompleteResults.innerHTML = matches.map((m, i) => `
+                    <div class="autocomplete-item ${i === selectedIndex ? 'selected' : ''}" data-word="${m.word}">
+                        <span>${m.word}</span>
+                        <span class="autocomplete-category">${m.category}</span>
+                    </div>
+                `).join('');
+                autocompleteResults.style.display = 'block';
+            } else {
+                autocompleteResults.style.display = 'none';
+            }
+        }
+
+        input.addEventListener('input', () => {
+            selectedIndex = -1;
+            updateAutocomplete();
+            generate(); // Live feedback
+        });
+
+        input.addEventListener('keydown', (e) => {
+            const items = autocompleteResults.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % items.length;
+                updateAutocomplete();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                updateAutocomplete();
+            } else if (e.key === 'Enter' && selectedIndex > -1) {
+                e.preventDefault();
+                selectWord(items[selectedIndex].dataset.word);
+            } else if (e.key === 'Escape') {
+                autocompleteResults.style.display = 'none';
+            }
+        });
+
+        function selectWord(word) {
+            const words = input.value.split(/[\s,]+/);
+            words.pop();
+            words.push(word);
+            input.value = words.join(' ') + ' ';
+            autocompleteResults.style.display = 'none';
+            input.focus();
+            generate();
+        }
+
+        autocompleteResults.addEventListener('click', (e) => {
+            const item = e.target.closest('.autocomplete-item');
+            if (item) selectWord(item.dataset.word);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target !== input) autocompleteResults.style.display = 'none';
+        });
+
         function generate() {
             const sentence = input.value;
             const result = parser.parse(sentence);
@@ -376,20 +509,6 @@
                 default: return word;
             }
         }
-
-        // Categorized Words (based on 32-word blocks in src)
-        const categories = [
-            { name: 'COLORS', start: 0, end: 32 },
-            { name: 'SHAPES', start: 32, end: 64 },
-            { name: 'GENERATORS', start: 64, end: 96 },
-            { name: 'OPERATIONS', start: 96, end: 128 },
-            { name: 'MODIFIERS', start: 128, end: 160 },
-            { name: 'SPATIAL', start: 160, end: 192 },
-            { name: 'MATERIALS', start: 192, end: 224 },
-            { name: 'FLOW', start: 224, end: 256 }
-        ];
-
-        const allWords = Object.keys(parser.words);
         
         categories.forEach(cat => {
             const group = document.createElement('div');
