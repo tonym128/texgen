@@ -120,11 +120,11 @@
         "divide": "c /= 1.1;",
         "mix": "c = mix(c, vec3(0.5), 0.5);",
         "blend": "c = (c + vec3(0.5)) * 0.5;",
-        "overlay": "c = c < vec3(0.5) ? 2.0*c*vec3(0.5) : 1.0-2.0*(1.0-c)*(1.0-vec3(0.5));",
+        "overlay": "c.r = c.r < 0.5 ? 2.0*c.r*0.5 : 1.0-2.0*(1.0-c.r)*0.5; c.g = c.g < 0.5 ? 2.0*c.g*0.5 : 1.0-2.0*(1.0-c.g)*0.5; c.b = c.b < 0.5 ? 2.0*c.b*0.5 : 1.0-2.0*(1.0-c.b)*0.5;",
         "screen": "c = 1.0 - (1.0-c)*(1.0-vec3(0.5));",
         "dodge": "c = c / (1.0 - vec3(0.5) + 0.001);",
         "burn": "c = 1.0 - (1.0-c)/vec3(0.5);",
-        "hardlight": "c = vec3(0.5) < vec3(0.5) ? 2.0*c*vec3(0.5) : 1.0-2.0*(1.0-c)*(1.0-vec3(0.5));",
+        "hardlight": "c.r = 0.5 < 0.5 ? 2.0*c.r*0.5 : 1.0-2.0*(1.0-c.r)*0.5; c.g = 0.5 < 0.5 ? 2.0*c.g*0.5 : 1.0-2.0*(1.0-c.g)*0.5; c.b = 0.5 < 0.5 ? 2.0*c.b*0.5 : 1.0-2.0*(1.0-c.b)*0.5;",
         "softlight": "c = (1.0-2.0*vec3(0.5))*c*c + 2.0*vec3(0.5)*c;",
         "difference": "c = abs(c - vec3(0.5));",
         "exclusion": "c = c + vec3(0.5) - 2.0*c*vec3(0.5);",
@@ -281,7 +281,14 @@
         "fast": "/* time modifier */",
         "pulse": "c *= sin(u_time*5.0)*0.2+0.8;",
         "flash": "c += vec3(step(0.9, sin(u_time*10.0)));",
-        "drift": "p += u_time*0.05;"
+        "drift": "p += u_time*0.05;",
+
+        // LAYERING & MASKING (New)
+        "over": "/* layer switch */",
+        "under": "/* layer switch */",
+        "inside": "/* mask logic */",
+        "outline": "f = abs(f) < 0.02 ? 1.0 : 0.0; c = mix(c, c*f, 0.5);",
+        "glow": "f = pow(max(0.0, 1.0 - f), 5.0); c += c * f;"
     };
 
     class WordParser {
@@ -291,7 +298,7 @@
 
         parse(sentence) {
             const tokens = sentence.toLowerCase().split(/[\s,]+/);
-            let shaderParts = ["vec3 c = vec3(0.0);", "vec2 p = vUv;", "float f = 0.0;"];
+            let shaderParts = ["vec3 c = vec3(0.0);", "vec2 p = vUv;", "float f = 0.0;", "float alpha = 0.0;", "vec3 c_bg = vec3(0.0);", "float f_bg = 0.0;"];
             let seed = null;
             let width = 512;
             let height = 512;
@@ -313,22 +320,48 @@
                     continue;
                 }
 
+                if (token === 'over' || token === 'under') {
+                    shaderParts.push("// " + token);
+                    if (token === 'over') {
+                        // Current c becomes background, reset c for new layer
+                        shaderParts.push("{ c_bg = mix(c_bg, c, f); c = vec3(0.0); f = 0.0; }");
+                    } else {
+                        // Current c is the background, everything before was foreground? 
+                        // Actually 'under' is tricky in linear. Let's make 'over' the primary layer swap.
+                        shaderParts.push("{ c_bg = c; c = vec3(0.0); f = 0.0; }");
+                    }
+                    continue;
+                }
+
+                if (token === 'inside') {
+                    shaderParts.push("// " + token);
+                    // Next word should be a shape or generator to mask
+                    shaderParts.push("{ f_bg = f; f = 0.0; }"); // Store current f as mask
+                    continue;
+                }
+
                 if (this.words[token]) {
                     shaderParts.push("// " + token);
-                    shaderParts.push(this.words[token]);
+                    let snippet = this.words[token];
+                    // If we just had 'inside', the next generator/shape should be masked by f_bg
+                    if (i > 0 && tokens[i-1] === 'inside') {
+                        snippet = snippet.replace('f = ', 'float f_inner = ');
+                        snippet = snippet.replace('c = mix(c, c*f, 0.5)', 'f = f_inner * f_bg; c = mix(c, c*f, 0.5)');
+                    }
+                    shaderParts.push("{ " + snippet + " }");
                 } else if (this.words[token + "_mat"]) {
                     shaderParts.push("// " + token);
-                    shaderParts.push(this.words[token + "_mat"]);
+                    shaderParts.push("{ " + this.words[token + "_mat"] + " }");
                 } else if (this.words[token + "_spatial"]) {
                     shaderParts.push("// " + token);
-                    shaderParts.push(this.words[token + "_spatial"]);
+                    shaderParts.push("{ " + this.words[token + "_spatial"] + " }");
                 } else if (this.words[token + "_mod"]) {
                     shaderParts.push("// " + token);
-                    shaderParts.push(this.words[token + "_mod"]);
+                    shaderParts.push("{ " + this.words[token + "_mod"] + " }");
                 }
             }
 
-            shaderParts.push("gl_FragColor = vec4(c, 1.0);");
+            shaderParts.push("gl_FragColor = vec4(mix(c_bg, c, f), 1.0);");
             
             return {
                 shader: shaderParts.join("\n"),

@@ -119,10 +119,14 @@
             overflow: hidden;
             width: 512px;
             height: 512px;
+            max-width: 90vw;
+            max-height: 90vw;
             flex-shrink: 0;
         }
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
         }
         .controls {
             width: 100%;
@@ -227,6 +231,44 @@
             display: none;
             margin-bottom: 20px;
         }
+
+        /* Metrics Panel */
+        .metrics-panel {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .metric-card h4 { margin: 0 0 10px 0; font-size: 0.75rem; text-transform: uppercase; color: #666; letter-spacing: 1px; }
+        .metric-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; }
+        .metric-value { font-family: monospace; color: var(--primary); font-weight: bold; }
+        .score-total { font-size: 1.5rem; color: #ff9500; font-weight: bold; margin-top: 10px; text-align: center; }
+
+        /* Tooltip */
+        #keyword-tooltip {
+            position: fixed;
+            background: #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 2000;
+            pointer-events: none;
+            display: none;
+            max-width: 250px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+        }
+        #keyword-tooltip b { color: var(--primary); display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 0.75rem; }
+        #keyword-tooltip i { color: #888; font-style: normal; display: block; margin-top: 5px; font-size: 0.75rem; }
         
         @media (max-width: 900px) {
             body { flex-direction: column; overflow: auto; height: auto; }
@@ -240,8 +282,14 @@
         <div class="sidebar-header" style="flex-shrink: 0;">
             <h2 style="display: flex; justify-content: space-between; align-items: center;">
                 Bookmarks
-                <span id="bookmark-count" style="font-size: 0.8rem; color: #666;">0</span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="import-btn" title="Import from JSON" style="background: none; border: none; cursor: pointer; color: #666; font-size: 1.1rem; padding: 0; display: flex; align-items: center; transition: color 0.2s;">📥</button>
+                    <button id="bookmark-gallery-btn" title="View Bookmarks Gallery" style="background: none; border: none; cursor: pointer; color: #666; font-size: 1.1rem; padding: 0; display: flex; align-items: center; transition: color 0.2s;">🖼️</button>
+                    <button id="export-btn" title="Export to JSON" style="background: none; border: none; cursor: pointer; color: #666; font-size: 1.1rem; padding: 0; display: flex; align-items: center; transition: color 0.2s;">📤</button>
+                    <span id="bookmark-count" style="font-size: 0.8rem; color: #666;">0</span>
+                </div>
             </h2>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
             <div id="bookmarks-list" style="margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #333; border-radius: 6px; background: #111;">
                 <!-- Saved words here -->
                 <div style="padding: 10px; color: #555; font-size: 0.8rem; text-align: center;">No bookmarks yet</div>
@@ -303,15 +351,51 @@
                 <span class="example-btn" data-s="green matrix digital pulse blur">Matrix Code</span>
                 <span class="example-btn" data-s="liquid gear ceil">Molten Machinery</span>
                 <span class="example-btn" data-s="perspective twist mint vortex sun">Vortex Sun</span>
-      </div>
-        </div>
+                </div>
 
+                <div class="metrics-panel">
+                <div class="metric-card">
+                    <h4>Performance</h4>
+                    <div class="metric-row"><span>Bake Time:</span> <span id="perf-bake" class="metric-value">0ms</span></div>
+                    <div class="metric-row"><span>Render Time:</span> <span id="perf-render" class="metric-value">0ms</span></div>
+                    <div class="metric-row"><span>Status:</span> <span id="perf-status" class="metric-value">Static</span></div>
+                </div>
+                <div class="metric-card">
+                    <h4>Aesthetic Score</h4>
+                    <div class="metric-row"><span>Colorfulness:</span> <span id="score-color" class="metric-value">0</span></div>
+                    <div class="metric-row"><span>Detail (Edges):</span> <span id="score-detail" class="metric-value">0</span></div>
+                    <div class="metric-row"><span>Complexity:</span> <span id="score-complexity" class="metric-value">0</span></div>
+                    <div class="score-total" id="score-total">0</div>
+                </div>
+                </div>
+                </div>
         <div id="debug" class="debug-shader"></div>
     </main>
 
     <div id="gallery-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:100; overflow-y:auto; padding:20px; box-sizing:border-box;">
         <button id="close-gallery-btn" style="position:fixed; top:20px; right:20px; z-index:101; background:#f00; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Close Gallery</button>
-        <div id="gallery-grid" style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; max-width:1200px; margin:0 auto; padding-top:40px;"></div>
+        
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding-top: 20px;">
+            <h2 id="gallery-title" style="margin-bottom: 20px;">Random Gallery</h2>
+            <div id="gallery-filters" style="display: flex; gap: 20px; background: #222; padding: 15px 25px; border-radius: 12px; border: 1px solid #333; flex-wrap: wrap; justify-content: center; margin-bottom: 30px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-size: 0.85rem; color: #aaa;">Min Score:</label>
+                    <input type="number" id="gallery-min-score" value="50" min="0" max="500" style="width: 60px; padding: 5px; border-radius: 4px; background: #333; border: 1px solid #444; color: #fff; outline: none;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="gallery-filter-anim" style="cursor: pointer;">
+                    <label for="gallery-filter-anim" style="font-size: 0.85rem; color: #aaa; cursor: pointer;">Animated Only</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="gallery-filter-random" style="cursor: pointer;">
+                    <label for="gallery-filter-random" style="font-size: 0.85rem; color: #aaa; cursor: pointer;">Randomized Only</label>
+                </div>
+                <button id="refresh-gallery-btn" style="background: var(--primary); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold;">Refresh</button>
+                <button id="gallery-export-btn" style="background: #5856d6; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold;">Export This Set</button>
+            </div>
+        </div>
+
+        <div id="gallery-grid" style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; max-width:1200px; margin:0 auto; padding-top:10px;"></div>
         <div id="gallery-loader" style="text-align:center; padding:40px; color:#aaa; width:100%;">Scrolling to generate more...</div>
     </div>
 
@@ -321,7 +405,11 @@
             <button id="close-editor-btn" style="background:#f00; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Close Editor</button>
         </div>
         <div style="max-width:1200px; margin:0 auto; padding-top:40px; text-align:center;">
-            <h2 id="editor-sentence-title" style="color: var(--primary); font-family: monospace; margin-bottom: 20px;"></h2>
+            <div style="position: relative; max-width: 800px; margin: 0 auto 20px; display: flex; gap: 10px;">
+                <input type="text" id="editor-sentence-input" style="flex: 1; padding: 12px 15px; border-radius: 8px; border: 1px solid #444; background: #333; color: #fff; font-size: 18px; outline: none;" autocomplete="off">
+                <div id="editor-autocomplete-results" class="autocomplete-list" style="right: 0;"></div>
+            </div>
+            <h2 id="editor-sentence-title" style="display: none;"></h2>
             
             <div style="display:flex; justify-content:center; margin-bottom: 40px; gap: 40px; align-items: center;">
                 <div style="text-align:center;">
@@ -335,6 +423,8 @@
         </div>
     </div>
 
+    <div id="keyword-tooltip"></div>
+
     <script>
         const canvas = document.getElementById('output');
         const input = document.getElementById('sentence-input');
@@ -345,6 +435,7 @@
         const seedDisplay = document.getElementById('seed-display');
         const animIndicator = document.getElementById('anim-indicator');
         const seedIndicator = document.getElementById('seed-indicator');
+        const tooltip = document.getElementById('keyword-tooltip');
 
         const tg = new TexGen({ canvas: canvas, width: 512, height: 512 });
         const parser = new TexGen.Words();
@@ -358,12 +449,15 @@
             { name: 'MODIFIERS', start: 128, end: 160 },
             { name: 'SPATIAL', start: 160, end: 192 },
             { name: 'MATERIALS', start: 192, end: 224 },
-            { name: 'FLOW', start: 224, end: 256 }
+            { name: 'FLOW', start: 224, end: 256 },
+            { name: 'LAYERING & MASKING', start: 256, end: 261 }
         ];
 
         const allWords = Object.keys(parser.words);
 
         const autocompleteResults = document.getElementById('autocomplete-results');
+        const editorSentenceInput = document.getElementById('editor-sentence-input');
+        const editorAutocompleteResults = document.getElementById('editor-autocomplete-results');
         
         // Map words to categories for autocomplete
         const keywordMap = [];
@@ -374,95 +468,219 @@
             });
         });
 
-        let selectedIndex = -1;
+        function setupAutocomplete(inputEl, resultsEl, onSelect) {
+            let selectedIndex = -1;
 
-        function updateAutocomplete() {
-            const val = input.value;
-            const words = val.split(/[\s,]+/);
-            const lastWord = words[words.length - 1].toLowerCase();
+            function updateAutocomplete() {
+                const val = inputEl.value;
+                const words = val.split(/[\s,]+/);
+                const lastWord = words[words.length - 1].toLowerCase();
 
-            if (!lastWord) {
-                autocompleteResults.style.display = 'none';
-                return;
+                if (!lastWord) {
+                    resultsEl.style.display = 'none';
+                    return;
+                }
+
+                const matches = keywordMap.filter(k => k.word.startsWith(lastWord)).slice(0, 10);
+                
+                if (matches.length > 0) {
+                    resultsEl.innerHTML = matches.map((m, i) => `
+                        <div class="autocomplete-item ${i === selectedIndex ? 'selected' : ''}" data-word="${m.word}">
+                            <span>${m.word}</span>
+                            <span class="autocomplete-category">${m.category}</span>
+                        </div>
+                    `).join('');
+                    resultsEl.style.display = 'block';
+                } else {
+                    resultsEl.style.display = 'none';
+                }
             }
 
-            const matches = keywordMap.filter(k => k.word.startsWith(lastWord)).slice(0, 10);
-            
-            if (matches.length > 0) {
-                autocompleteResults.innerHTML = matches.map((m, i) => `
-                    <div class="autocomplete-item ${i === selectedIndex ? 'selected' : ''}" data-word="${m.word}">
-                        <span>${m.word}</span>
-                        <span class="autocomplete-category">${m.category}</span>
-                    </div>
-                `).join('');
-                autocompleteResults.style.display = 'block';
-            } else {
-                autocompleteResults.style.display = 'none';
-            }
+            inputEl.addEventListener('input', () => {
+                selectedIndex = -1;
+                updateAutocomplete();
+                onSelect(); // Live feedback
+            });
+
+            inputEl.addEventListener('keydown', (e) => {
+                const items = resultsEl.querySelectorAll('.autocomplete-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % items.length;
+                    updateAutocomplete();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                    updateAutocomplete();
+                } else if (e.key === 'Enter' && selectedIndex > -1) {
+                    e.preventDefault();
+                    const word = items[selectedIndex].dataset.word;
+                    const words = inputEl.value.split(/[\s,]+/);
+                    words.pop();
+                    words.push(word);
+                    inputEl.value = words.join(' ') + ' ';
+                    resultsEl.style.display = 'none';
+                    inputEl.focus();
+                    onSelect();
+                } else if (e.key === 'Escape') {
+                    resultsEl.style.display = 'none';
+                }
+            });
+
+            resultsEl.addEventListener('click', (e) => {
+                const item = e.target.closest('.autocomplete-item');
+                if (item) {
+                    const word = item.dataset.word;
+                    const words = inputEl.value.split(/[\s,]+/);
+                    words.pop();
+                    words.push(word);
+                    inputEl.value = words.join(' ') + ' ';
+                    resultsEl.style.display = 'none';
+                    inputEl.focus();
+                    onSelect();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target !== inputEl) resultsEl.style.display = 'none';
+            });
         }
 
-        input.addEventListener('input', () => {
-            selectedIndex = -1;
-            updateAutocomplete();
-            generate(); // Live feedback
-        });
-
-        input.addEventListener('keydown', (e) => {
-            const items = autocompleteResults.querySelectorAll('.autocomplete-item');
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectedIndex = (selectedIndex + 1) % items.length;
-                updateAutocomplete();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-                updateAutocomplete();
-            } else if (e.key === 'Enter' && selectedIndex > -1) {
-                e.preventDefault();
-                selectWord(items[selectedIndex].dataset.word);
-            } else if (e.key === 'Escape') {
-                autocompleteResults.style.display = 'none';
+        // Initialize autocomplete for main input
+        setupAutocomplete(input, autocompleteResults, generate);
+        
+        // Initialize autocomplete for editor input
+        setupAutocomplete(editorSentenceInput, editorAutocompleteResults, () => {
+            if (isEditorOpen) {
+                const sentence = editorSentenceInput.value;
+                const result = parser.parse(sentence);
+                editorActiveShader = result.shader;
+                editorTg.init(result.shader);
+                if (result.seed !== null) editorTg.seed = result.seed;
+                editorTg.render(0);
             }
         });
 
-        function selectWord(word) {
-            const words = input.value.split(/[\s,]+/);
-            words.pop();
-            words.push(word);
-            input.value = words.join(' ') + ' ';
-            autocompleteResults.style.display = 'none';
-            input.focus();
-            generate();
+        function getKeywordDescription(word, category) {
+            const descriptions = {
+                'COLORS': `Sets the base color to ${word}. Use it before a shape or generator to tint it.`,
+                'SHAPES': `Draws a ${word} shape using a Signed Distance Field (SDF). Combines with the current color.`,
+                'GENERATORS': `Creates a procedural ${word} pattern. These usually fill the whole screen or mask.`,
+                'OPERATIONS': `Performs a mathematical ${word} blend between the current color and a 50% gray reference.`,
+                'MODIFIERS': `Adjusts the ${word} property of the drawing, such as size, brightness, or surface quality.`,
+                'SPATIAL': `Transforms the coordinate space using ${word}. Affects all subsequent keywords in the sentence.`,
+                'MATERIALS': `A preset that simulates ${word} surface properties using noise and specialized shading.`,
+                'FLOW': `A semantic connector or animation modifier (${word}). 'pulse' and 'drift' add real-time movement.`,
+                'LAYERING & MASKING': `Advanced control: 'over' stacks layers, 'inside' masks generators, 'outline'/'glow' modify shapes.`
+            };
+            return descriptions[category] || 'Procedural keyword for texture synthesis.';
         }
 
-        autocompleteResults.addEventListener('click', (e) => {
-            const item = e.target.closest('.autocomplete-item');
-            if (item) selectWord(item.dataset.word);
+        // Global Escape to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (isEditorOpen) {
+                    editorModal.style.display = 'none';
+                    isEditorOpen = false;
+                } else if (galleryModal.style.display === 'block') {
+                    galleryModal.style.display = 'none';
+                }
+            }
         });
 
-        document.addEventListener('click', (e) => {
-            if (e.target !== input) autocompleteResults.style.display = 'none';
-        });
+        const perfBake = document.getElementById('perf-bake');
+        const perfRender = document.getElementById('perf-render');
+        const perfStatus = document.getElementById('perf-status');
+        const scoreColor = document.getElementById('score-color');
+        const scoreDetail = document.getElementById('score-detail');
+        const scoreComplexity = document.getElementById('score-complexity');
+        const scoreTotal = document.getElementById('score-total');
+
+        function calculateScore(shader, sentence, pixels) {
+            const isAnimated = shader.includes('u_time');
+            const isRandomized = /random|noise|fbm|voronoi/.test(shader);
+            
+            const tokens = sentence.split(/[\s,]+/).filter(t => t.length > 0).length;
+            let complexity = tokens * 5;
+            if (isAnimated) complexity += 20;
+            if (isRandomized) complexity += 15;
+
+            let colorVariance = 0;
+            let edgeCount = 0;
+            let rAvg = 0, gAvg = 0, bAvg = 0;
+            for (let i = 0; i < pixels.length; i += 4) {
+                rAvg += pixels[i]; gAvg += pixels[i+1]; bAvg += pixels[i+2];
+            }
+            rAvg /= (pixels.length/4); gAvg /= (pixels.length/4); bAvg /= (pixels.length/4);
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i], g = pixels[i+1], b = pixels[i+2];
+                colorVariance += Math.sqrt((r-rAvg)**2 + (g-gAvg)**2 + (b-bAvg)**2);
+                if (i + 4 < pixels.length) {
+                    const r2 = pixels[i+4], g2 = pixels[i+5], b2 = pixels[i+6];
+                    const diff = Math.abs(r-r2) + Math.abs(g-g2) + Math.abs(b-b2);
+                    if (diff > 30) edgeCount++;
+                }
+            }
+
+            const colorScore = Math.min(100, Math.floor(colorVariance / 150));
+            const detailScore = Math.min(100, Math.floor(edgeCount / 30));
+            
+            return {
+                complexity,
+                color: colorScore,
+                detail: detailScore,
+                total: complexity + colorScore + detailScore,
+                isAnimated,
+                isRandomized
+            };
+        }
+
+        function updateMetrics(result, bakeMs) {
+            perfBake.textContent = bakeMs.toFixed(1) + 'ms';
+            
+            const isAnimated = result.shader.includes('u_time');
+            perfStatus.textContent = isAnimated ? 'Animated' : 'Static';
+
+            // 2. Analyze Pixel Data (Low res for speed)
+            const pixels = tg.bake(result.shader, { width: 64, height: 64, format: 'pixels' });
+            const score = calculateScore(result.shader, input.value, pixels);
+
+            scoreComplexity.textContent = score.complexity;
+            scoreColor.textContent = score.color;
+            scoreDetail.textContent = score.detail;
+            scoreTotal.textContent = score.total;
+        }
 
         function generate() {
+            const start = performance.now();
             const sentence = input.value;
             const result = parser.parse(sentence);
             
-            tg.width = result.width;
-            tg.height = result.height;
+            // Set target dimensions
+            const targetWidth = result.width || 512;
+            const targetHeight = result.height || 512;
+
             if (result.seed !== null) {
                 tg.seed = result.seed;
                 seedSlider.value = result.seed;
                 seedDisplay.textContent = result.seed;
             } else {
-                // If no seed in sentence, keep current global seed but ensure slider matches it (or generates a random one if we want)
                 seedSlider.value = Math.floor(tg.seed);
                 seedDisplay.textContent = Math.floor(tg.seed);
             }
 
             try {
+                // First pass: Analysis at low res
+                const endBake = performance.now();
+                updateMetrics(result, endBake - start);
+
+                // Second pass: Restore 512x512 for visual preview
+                tg.width = targetWidth;
+                tg.height = targetHeight;
                 tg.bake(result.shader);
+                
                 debugEl.textContent = result.shader;
                 
                 // Check if animated or randomized
@@ -532,6 +750,18 @@
                     input.value = example;
                     generate();
                 };
+
+                item.onmouseenter = (e) => {
+                    tooltip.innerHTML = `<b>${cat.name}: ${displayName}</b>${getKeywordDescription(displayName, cat.name)}<i>Example: ${example}</i>`;
+                    tooltip.style.display = 'block';
+                    const rect = item.getBoundingClientRect();
+                    tooltip.style.left = (rect.right + 10) + 'px';
+                    tooltip.style.top = rect.top + 'px';
+                };
+                item.onmouseleave = () => {
+                    tooltip.style.display = 'none';
+                };
+
                 group.appendChild(item);
             }
             sidebarContent.appendChild(group);
@@ -675,20 +905,127 @@
         };
 
         editorSaveBtn.onclick = () => {
-            saveBookmark(editorSentenceTitle.textContent);
+            const newSentence = editorSentenceInput.value;
+            saveBookmark(newSentence);
+            
+            // If editing an imported item, update it in the collection too
+            if (currentlyEditingSource && currentlyEditingSource.type === 'imported') {
+                importedItems[currentlyEditingSource.index].word = newSentence;
+                // Generate a new name if it looks like keywords changed
+                const words = newSentence.split(/[\s,]+/).filter(w => !w.includes(':'));
+                importedItems[currentlyEditingSource.index].name = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Untitled Texture";
+                loadBookmarkGallery(importedItems, 'Imported Gallery', true);
+            }
+
             editorSaveBtn.textContent = 'Saved!';
             setTimeout(() => { editorSaveBtn.textContent = 'Save Bookmark'; }, 1000);
         };
 
+        const importBtn = document.getElementById('import-btn');
+        const importFileInput = document.getElementById('import-file-input');
+
+        importBtn.onmouseenter = () => importBtn.style.color = 'var(--primary)';
+        importBtn.onmouseleave = () => importBtn.style.color = '#666';
+        importBtn.onclick = () => importFileInput.click();
+
+        importFileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (Array.isArray(data)) {
+                        importedItems = data;
+                        galleryMode = 'imported';
+                        galleryModal.style.display = 'block';
+                        loadBookmarkGallery(importedItems, 'Imported Gallery', true);
+                    } else {
+                        alert("Invalid JSON format. Expected an array of textures.");
+                    }
+                } catch (err) {
+                    alert("Error parsing JSON file.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Reset for next time
+        };
+
+        const exportBtn = document.getElementById('export-btn');
+        const galleryExportBtn = document.getElementById('gallery-export-btn');
+
+        function doExport() {
+            let itemsToExport = [];
+            let fileName = "";
+
+            if (galleryModal.style.display === 'block') {
+                if (galleryMode === 'imported') {
+                    itemsToExport = importedItems;
+                    fileName = "texgen_imported_modified";
+                } else if (galleryMode === 'bookmarks') {
+                    itemsToExport = bookmarks.map(sentence => {
+                        const words = sentence.split(/[\s,]+/).filter(w => !w.includes(':'));
+                        const name = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Untitled Texture";
+                        return { name, word: sentence };
+                    });
+                    fileName = "texgen_bookmarks";
+                } else {
+                    // Random mode: Grab everything currently in the grid
+                    const cards = Array.from(galleryGrid.querySelectorAll('.keyword-item'));
+                    itemsToExport = cards.map(card => {
+                        const sentence = card.querySelector('div:last-child').textContent;
+                        const words = sentence.split(/[\s,]+/).filter(w => !w.includes(':'));
+                        const name = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Random Texture";
+                        return { name, word: sentence };
+                    });
+                    fileName = "texgen_random_export";
+                }
+            } else {
+                if (bookmarks.length === 0) {
+                    alert("No bookmarks to export!");
+                    return;
+                }
+                itemsToExport = bookmarks.map(sentence => {
+                    const words = sentence.split(/[\s,]+/).filter(w => !w.includes(':'));
+                    const name = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Untitled Texture";
+                    return { name, word: sentence };
+                });
+                fileName = "texgen_bookmarks";
+            }
+
+            const blob = new Blob([JSON.stringify(itemsToExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${fileName}_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        exportBtn.onmouseenter = () => exportBtn.style.color = 'var(--primary)';
+        exportBtn.onmouseleave = () => exportBtn.style.color = '#666';
+        exportBtn.onclick = doExport;
+        galleryExportBtn.onclick = doExport;
+
         renderBookmarks();
 
-        // Initial generation
-        generate();
+        // Initial generation with random word
+        async function initRandom() {
+            const raw = getRandomSentence();
+            input.value = await optimizeSentence(raw);
+            generate();
+        }
+        initRandom();
 
         // Animation loop
         function animate(time) {
+            const start = performance.now();
             const result = parser.parse(input.value);
             tg.render(time * 0.001);
+            const end = performance.now();
+            
+            perfRender.textContent = (end - start).toFixed(2) + 'ms';
             
             if (isEditorOpen && editorTg && editorActiveShader && editorActiveShader.includes('u_time')) {
                 editorTg.render(time * 0.001);
@@ -721,9 +1058,52 @@
         let editorTg = null;
         let editorActiveShader = null;
 
+        let galleryHoverTg = null;
+        let activeHoverImg = null;
+        let activeHoverShader = null;
+        let activeHoverSeed = 0;
+        let staticImgData = new Map(); // Store static src to restore
+
+        function startHoverAnim(imgEl, shader, seed) {
+            if (!galleryHoverTg) {
+                const hCanvas = document.createElement('canvas');
+                hCanvas.width = 128; hCanvas.height = 128;
+                galleryHoverTg = new TexGen({ canvas: hCanvas, width: 128, height: 128 });
+            }
+            
+            if (!staticImgData.has(imgEl)) {
+                staticImgData.set(imgEl, imgEl.src);
+            }
+            
+            activeHoverImg = imgEl;
+            activeHoverShader = shader;
+            activeHoverSeed = seed;
+            galleryHoverTg.init(shader);
+            galleryHoverTg.seed = seed;
+        }
+
+        function stopHoverAnim(imgEl) {
+            if (activeHoverImg === imgEl) {
+                activeHoverImg = null;
+            }
+            if (staticImgData.has(imgEl)) {
+                imgEl.src = staticImgData.get(imgEl);
+            }
+        }
+
+        function animateHover(time) {
+            if (activeHoverImg && galleryHoverTg) {
+                galleryHoverTg.render(time * 0.001);
+                activeHoverImg.src = galleryHoverTg.canvas.toDataURL('image/webp', 0.5);
+            }
+            requestAnimationFrame(animateHover);
+        }
+        requestAnimationFrame(animateHover);
+
         async function openEditor(sentence, originalSeed, originalDataUrl) {
             isEditorOpen = true;
             editorModal.style.display = 'block';
+            editorSentenceInput.value = `${sentence} seed:${originalSeed.toFixed(0)}`;
             editorSentenceTitle.textContent = sentence;
             editorMainSeed.textContent = "Original Seed: " + originalSeed.toFixed(2);
             
@@ -748,8 +1128,19 @@
                 const result = parser.parse(`${sentence} seed:${i}`);
                 
                 const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'background:#222; padding:5px; border-radius:4px; display:flex; flex-direction:column; align-items:center; width:80px;';
+                itemDiv.style.cssText = 'background:#222; padding:5px; border-radius:4px; display:flex; flex-direction:column; align-items:center; width:80px; cursor:pointer; transition:background 0.2s;';
+                itemDiv.onmouseover = () => itemDiv.style.background = '#333';
+                itemDiv.onmouseout = () => itemDiv.style.background = '#222';
                 
+                itemDiv.onclick = () => {
+                    editorSentenceInput.value = `${sentence} seed:${i}`;
+                    const res = parser.parse(editorSentenceInput.value);
+                    editorActiveShader = res.shader;
+                    editorTg.init(res.shader);
+                    editorTg.seed = i;
+                    editorTg.render(0);
+                };
+
                 const img = document.createElement('img');
                 img.width = 64;
                 img.height = 64;
@@ -810,101 +1201,228 @@
 
         function getRandomSentence() {
             const keys = Object.keys(parser.words);
-            const validKeys = keys.filter(k => !k.endsWith('_mat') && !k.endsWith('_spatial') && !k.endsWith('_mod'));
-            // Try to make slightly structured random sentences: color + shape + generator + modifier
-            const colors = categories.find(c => c.name === 'COLORS');
-            const shapes = categories.find(c => c.name === 'SHAPES');
-            const generators = categories.find(c => c.name === 'GENERATORS');
-            const modifiers = categories.find(c => c.name === 'MODIFIERS');
-            
+            const getWordsInCat = (catName) => {
+                const cat = categories.find(c => c.name === catName);
+                return keys.slice(cat.start, cat.end).map(k => k.replace(/_(mat|spatial|mod)$/, ''));
+            };
+
+            const colors = getWordsInCat('COLORS');
+            const shapes = getWordsInCat('SHAPES');
+            const generators = getWordsInCat('GENERATORS');
+            const spatial = getWordsInCat('SPATIAL');
+            const materials = getWordsInCat('MATERIALS');
+
+            const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            // Logic: Base Layer + Optional Over Layer
             let sentence = [];
-            const numWords = Math.floor(Math.random() * 3) + 3; // 3 to 5 words
-            for (let i = 0; i < numWords; i++) {
-                sentence.push(validKeys[Math.floor(Math.random() * validKeys.length)]);
+
+            // --- LAYER 1 (Background) ---
+            if (Math.random() > 0.5) sentence.push(pick(spatial));
+            sentence.push(pick(colors));
+            sentence.push(pick(generators));
+            
+            // --- LAYER 2 (Overlay) ---
+            if (Math.random() > 0.4) {
+                sentence.push("over");
+                sentence.push(pick(colors));
+                const shape = pick(shapes);
+                sentence.push(shape);
+                
+                // Randomly add SDF modifiers to shapes
+                if (Math.random() > 0.7) sentence.push("outline");
+                if (Math.random() > 0.7) sentence.push("glow");
+
+                // Randomly add masking
+                if (Math.random() > 0.8) {
+                    sentence.push("inside");
+                    sentence.push(pick(generators));
+                }
             }
+
             return sentence.join(' ');
         }
 
+        async function optimizeSentence(sentence) {
+            if (!sentence.includes('over') && !sentence.includes('under')) return sentence;
+            
+            const parts = sentence.split(/\s(?:over|under)\s/);
+            if (parts.length < 2) return sentence;
+
+            const seed = 42;
+            const fullRes = parser.parse(sentence);
+            const pFull = await TexGen.bakeAsync(fullRes.shader, { width: 32, height: 32, seed, format: 'pixels' });
+
+            const isSame = (a, b) => {
+                if (!a || !b) return false;
+                for (let i = 0; i < a.length; i += 4) { // Sample every pixel
+                    if (Math.abs(a[i] - b[i]) > 5 || Math.abs(a[i+1] - b[i+1]) > 5 || Math.abs(a[i+2] - b[i+2]) > 5) return false;
+                }
+                return true;
+            };
+
+            // Check if removing layers results in the same image
+            for (let i = 0; i < parts.length; i++) {
+                const subRes = parser.parse(parts[i]);
+                const pSub = await TexGen.bakeAsync(subRes.shader, { width: 32, height: 32, seed, format: 'pixels' });
+                if (isSame(pFull, pSub)) {
+                    console.log("Optimized: Layer redundant, using shorter version:", parts[i]);
+                    return parts[i];
+                }
+            }
+
+            return sentence;
+        }
+
         const randomBtn = document.getElementById('random-btn');
-        randomBtn.onclick = () => {
-            input.value = getRandomSentence();
+        randomBtn.onclick = async () => {
+            const raw = getRandomSentence();
+            input.value = await optimizeSentence(raw);
             generate();
         };
+
+        function createGalleryCard(sentence, result, score, seedToUse) {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = 'background:#222; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center; width:148px; cursor:pointer; border:1px solid #333; transition:transform 0.2s, border-color 0.2s; position:relative;';
+            
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.style.cssText = 'position:absolute; top:15px; right:15px; display:flex; gap:4px; pointer-events:none;';
+            if (score.isAnimated) {
+                indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Animated">⏱️</div>';
+            }
+            if (score.isRandomized) {
+                indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Randomized">🎲</div>';
+            }
+            
+            indicatorDiv.innerHTML += `<div style="background:rgba(255,149,0,0.8); color:#000; padding:2px 4px; border-radius:4px; font-size:10px; font-weight:bold;">${score.total}</div>`;
+
+            const img = document.createElement('img');
+            img.width = 128;
+            img.height = 128;
+            img.style.borderRadius = '4px';
+            img.style.marginBottom = '8px';
+            img.style.background = '#000';
+            
+            let isHovering = false;
+            itemDiv.onmouseenter = () => {
+                itemDiv.style.transform = 'scale(1.05)';
+                itemDiv.style.borderColor = '#007aff';
+                if (score.isAnimated) {
+                    isHovering = true;
+                    startHoverAnim(img, result.shader, seedToUse);
+                }
+            };
+            itemDiv.onmouseleave = () => {
+                itemDiv.style.transform = 'scale(1)';
+                itemDiv.style.borderColor = '#333';
+                isHovering = false;
+                stopHoverAnim(img);
+            };
+
+            const label = document.createElement('div');
+            label.style.cssText = 'font-size:0.7rem; color:#aaa; text-align:center; word-break:break-word; line-height:1.2;';
+            label.textContent = sentence;
+
+            itemDiv.appendChild(indicatorDiv);
+            itemDiv.appendChild(img);
+            itemDiv.appendChild(label);
+            galleryGrid.appendChild(itemDiv);
+
+            itemDiv.onclick = () => {
+                openEditor(sentence, seedToUse, img.src);
+            };
+
+            // Initial static bake
+            TexGen.bakeAsync(result.shader, { width: 128, height: 128, seed: seedToUse }).then(url => {
+                if (url) img.src = url;
+            });
+
+            return itemDiv;
+        }
+
+        let galleryMode = 'random'; // 'random', 'bookmarks', or 'imported'
+        let importedItems = [];
+        let currentlyEditingSource = null; // { type: 'bookmarks'|'imported', index: number }
+
+        async function loadBookmarkGallery(items = bookmarks, title = 'Bookmarks Gallery', isImported = false) {
+            galleryGrid.innerHTML = '';
+            galleryLoader.style.display = 'none';
+            document.getElementById('gallery-title').textContent = title;
+            document.getElementById('gallery-filters').style.display = 'none';
+            
+            for (let i = 0; i < items.length; i++) {
+                const sentence = typeof items[i] === 'string' ? items[i] : items[i].word;
+                const result = parser.parse(sentence);
+                let seedToUse = result.seed !== null ? result.seed : 42;
+                const pixels = await TexGen.bakeAsync(result.shader, { width: 64, height: 64, seed: seedToUse, format: 'pixels' });
+                const score = calculateScore(result.shader, sentence, pixels);
+                const card = createGalleryCard(sentence, result, score, seedToUse);
+                
+                // Track source for editing
+                card.onclick = () => {
+                    currentlyEditingSource = { type: isImported ? 'imported' : 'bookmarks', index: i };
+                    openEditor(sentence, seedToUse, card.querySelector('img').src);
+                };
+            }
+        }
 
         async function loadGalleryImages(count = 10) {
             if (isLoadingGallery) return;
             isLoadingGallery = true;
-            for (let i = 0; i < count; i++) {
-                const sentence = getRandomSentence();
+            galleryLoader.style.display = 'block';
+            document.getElementById('gallery-title').textContent = 'Random Gallery';
+            document.getElementById('gallery-filters').style.display = 'flex';
+            
+            const minScore = parseInt(document.getElementById('gallery-min-score').value) || 0;
+            const filterAnim = document.getElementById('gallery-filter-anim').checked;
+            const filterRandom = document.getElementById('gallery-filter-random').checked;
+
+            let found = 0;
+            let attempts = 0;
+            const maxAttempts = count * 20;
+
+            while (found < count && attempts < maxAttempts) {
+                attempts++;
+                let sentence = getRandomSentence();
+                sentence = await optimizeSentence(sentence);
                 const result = parser.parse(sentence);
                 
-                const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'background:#222; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center; width:148px; cursor:pointer; border:1px solid #333; transition:transform 0.2s, border-color 0.2s; position:relative;';
-                itemDiv.onmouseover = () => { itemDiv.style.transform = 'scale(1.05)'; itemDiv.style.borderColor = '#007aff'; };
-                itemDiv.onmouseout = () => { itemDiv.style.transform = 'scale(1)'; itemDiv.style.borderColor = '#333'; };
-                
-                // Indicators
-                const isAnimated = result.shader.includes('u_time');
-                const isRandomized = /random|noise|fbm|voronoi/.test(result.shader);
-                
-                const indicatorDiv = document.createElement('div');
-                indicatorDiv.style.cssText = 'position:absolute; top:15px; right:15px; display:flex; gap:4px; pointer-events:none;';
-                if (isAnimated) {
-                    indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Animated">⏱️</div>';
-                }
-                if (isRandomized) {
-                    indicatorDiv.innerHTML += '<div style="background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:4px; font-size:10px; border:1px solid #444;" title="Randomized">🎲</div>';
-                }
+                // Fast pass analysis
+                let seedToUse = result.seed !== null ? result.seed : Math.random() * 100;
+                const pixels = await TexGen.bakeAsync(result.shader, { width: 64, height: 64, seed: seedToUse, format: 'pixels' });
+                const score = calculateScore(result.shader, sentence, pixels);
 
-                const img = document.createElement('img');
-                img.width = 128;
-                img.height = 128;
-                img.style.borderRadius = '4px';
-                img.style.marginBottom = '8px';
-                img.style.background = '#000';
-                
-                const label = document.createElement('div');
-                label.style.cssText = 'font-size:0.7rem; color:#aaa; text-align:center; word-break:break-word; line-height:1.2;';
-                label.textContent = sentence;
+                // Apply Filters
+                if (score.total < minScore) continue;
+                if (filterAnim && !score.isAnimated) continue;
+                if (filterRandom && !score.isRandomized) continue;
 
-                itemDiv.appendChild(indicatorDiv);
-                itemDiv.appendChild(img);
-                itemDiv.appendChild(label);
-                galleryGrid.appendChild(itemDiv);
-
-                let seedToUse = result.seed !== null ? result.seed : Math.random()*100;
-
-                itemDiv.onclick = () => {
-                    openEditor(sentence, seedToUse, img.src);
-                };
-
-                // Use async bake if available to avoid freezing UI
-                try {
-                    let dataUrl;
-                    if (TexGen.bakeAsync) {
-                        dataUrl = await TexGen.bakeAsync(result.shader, { width: 128, height: 128, seed: seedToUse });
-                    } else {
-                        const tempTg = new TexGen({ width: 128, height: 128 });
-                        dataUrl = tempTg.bake(result.shader);
-                    }
-                    if (dataUrl) {
-                        img.src = dataUrl;
-                    } else {
-                        throw new Error("No dataUrl returned");
-                    }
-                } catch(e) {
-                    console.error("Gallery generation error", e);
-                    itemDiv.remove();
-                    i--; // Try again to fulfill the count
-                }
+                found++;
+                createGalleryCard(sentence, result, score, seedToUse);
             }
             isLoadingGallery = false;
         }
 
         galleryBtn.onclick = () => {
+            galleryMode = 'random';
             galleryModal.style.display = 'block';
             if (galleryGrid.children.length === 0) {
                 loadGalleryImages(100);
+            }
+        };
+
+        document.getElementById('bookmark-gallery-btn').onclick = () => {
+            galleryMode = 'bookmarks';
+            galleryModal.style.display = 'block';
+            loadBookmarkGallery();
+        };
+
+        document.getElementById('refresh-gallery-btn').onclick = () => {
+            galleryGrid.innerHTML = '';
+            if (galleryMode === 'random') {
+                loadGalleryImages(100);
+            } else {
+                loadBookmarkGallery();
             }
         };
 
