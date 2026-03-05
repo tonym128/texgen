@@ -46,7 +46,14 @@ This list tracks the planned enhancements for the **TexGen** library, documentat
 - [ ] **Procedural Sprite Editor**: A specialized UI for generating small 16x16 or 32x32 characters and items.
 - [ ] **Physics Engine Example**: A demo showcasing `texgen.js` combined with a 2D physics engine like Matter.js or P2.js.
 - [ ] **Audio-Reactive Textures**: A visualizer demo using Web Audio API to drive shader uniforms.
-- [ ] **Multiplayer Maze**: An extension of the 3D Maze demo with simple WebRTC-based multiplayer.
+- [x] **Multiplayer WebRTC World**: A 3D exploration demo with PeerJS networking and TexGen procedural avatars.
+
+## 📝 Progress Log (2026-03-05)
+- Created **WebRTC World Demo** with real-time multiplayer, chat, and interactive objects.
+- Integrated **PeerJS** for serverless world discovery and data synchronization.
+- Implemented **Procedural Terrain** using TexGen heightmaps with shared seeds.
+- Added **Avatar Customization** via TexGen Word Textures.
+- Added **Network Monitoring** and Minimap UI.
 
 ## 📝 Progress Log (2026-03-03)
 - Implemented `bakeAsync()` for non-blocking texture generation.
