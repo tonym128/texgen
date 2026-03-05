@@ -66,6 +66,9 @@ class WorldStreamer {
         this.keys = {};
         this.lastTime = performance.now();
         
+        // Performance: Canvas Pool
+        this.canvasPool = [];
+
         // CRITICAL: Consistent seed for all workers in the pool
         this.worldSeed = 42.42; 
 
@@ -75,6 +78,18 @@ class WorldStreamer {
         document.getElementById('hud').appendChild(this.errorLog);
 
         this.init();
+    }
+
+    getCanvasFromPool() {
+        if (this.canvasPool.length > 0) return this.canvasPool.pop();
+        const cvs = document.createElement('canvas');
+        cvs.width = CHUNK_SIZE;
+        cvs.height = CHUNK_SIZE;
+        return cvs;
+    }
+
+    returnCanvasToPool(cvs) {
+        this.canvasPool.push(cvs);
     }
 
     init() {
@@ -130,7 +145,7 @@ class WorldStreamer {
         this.lastTime = t;
 
         let moved = false;
-        const speed = 600 * dt; // Fixed scrolling speed
+        const speed = 800 * dt; // Faster scrolling speed now that it's optimized
 
         if (this.keys['ArrowUp'] || this.keys['KeyW']) { this.camera.y -= speed; moved = true; }
         if (this.keys['ArrowDown'] || this.keys['KeyS']) { this.camera.y += speed; moved = true; }
@@ -162,8 +177,9 @@ class WorldStreamer {
                     this.createChunk(x, y);
                 }
                 const el = this.chunks.get(key).element;
-                el.style.left = (x * CHUNK_SIZE - this.camera.x) + 'px';
-                el.style.top = (y * CHUNK_SIZE - this.camera.y) + 'px';
+                const tx = x * CHUNK_SIZE - this.camera.x;
+                const ty = y * CHUNK_SIZE - this.camera.y;
+                el.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
             }
         }
 
@@ -171,6 +187,7 @@ class WorldStreamer {
         for (const [key, chunk] of this.chunks) {
             const [cx, cy] = key.split(',').map(Number);
             if (cx < startX - 2 || cx > endX + 2 || cy < startY - 2 || cy > endY + 2) {
+                if (chunk.canvas) this.returnCanvasToPool(chunk.canvas);
                 chunk.element.remove();
                 this.chunks.delete(key);
             }
@@ -183,26 +200,33 @@ class WorldStreamer {
         const key = `${x},${y}`;
         const el = document.createElement('div');
         el.className = 'chunk';
-        el.innerText = 'Baking...';
+        el.innerText = '...';
+        el.style.border = 'none'; // Cleaner look
         this.world.appendChild(el);
-        this.chunks.set(key, { element: el, baked: false });
+        this.chunks.set(key, { element: el, baked: false, canvas: null });
 
         this.setLoading(true);
         try {
-            // Pass the world seed to ensure consistency across the worker pool
-            const dataUrl = await TexGen.bakeAsync(WORLD_SHADER, {
+            // Performance: Use 'bitmap' format to avoid DataURL overhead
+            const bitmap = await TexGen.bakeAsync(WORLD_SHADER, {
                 width: CHUNK_SIZE,
                 height: CHUNK_SIZE,
                 seed: this.worldSeed,
+                format: 'bitmap',
                 uniforms: { u_chunkX: x, u_chunkY: y }
             });
 
             if (this.chunks.has(key)) {
                 el.innerText = '';
-                const img = new Image();
-                img.src = dataUrl;
-                el.appendChild(img);
+                const canvas = this.getCanvasFromPool();
+                const ctx = canvas.getContext('bitmaprenderer');
+                ctx.transferFromImageBitmap(bitmap);
+                el.appendChild(canvas);
+                this.chunks.get(key).canvas = canvas;
                 this.chunks.get(key).baked = true;
+            } else {
+                // If chunk was already removed while baking
+                bitmap.close();
             }
         } catch (e) {
             console.error("Chunk bake failed", e);

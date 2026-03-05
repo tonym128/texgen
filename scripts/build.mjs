@@ -56,12 +56,20 @@ console.log('✅ Distribution files generated in dist/');
 // 3. Sync to Examples
 const examples = [
     'platformer', 'marble_roller', 'maze3d', 'texture_generator', 
-    'flight_sim', 'card_roguelike', 'solitaire', 'multipass_post', 'texture_streaming', 'playground'
+    'flight_sim', 'card_roguelike', 'solitaire', 'multipass_post', 
+    'texture_streaming', 'playground', 'carded'
 ];
 
 examples.forEach(ex => {
     const dest = path.resolve(root, `example/${ex}/texgen.js`);
     fs.copyFileSync(path.resolve(dist, 'texgen.js'), dest);
+});
+
+// Sync Words addon to examples that use it locally
+const wordsExamples = ['carded'];
+wordsExamples.forEach(ex => {
+    const dest = path.resolve(root, `example/${ex}/texgen.words.js`);
+    fs.copyFileSync(path.resolve(root, 'src/texgen.words.js'), dest);
 });
 
 // Special case for TS gallery (ESM)
