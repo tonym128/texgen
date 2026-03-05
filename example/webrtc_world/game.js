@@ -28,9 +28,11 @@ class WebRTCWorld {
         this.texGen = new TexGen();
         this.wordParser = new TexGen.Words();
         
-        this.worldSeed = Math.random() * 1000;
+        // Random world seed, host will sync this to all joiners
+        this.worldSeed = Math.random() * 1000; 
         this.worldShader = `void main() {
-            float h = fbm(vUv * 5.0 + u_seed, 5.0);
+            // Internal noise seeding via u_seed ensures identical results
+            float h = fbm(vUv * 5.0, 5.0);
             vec3 grass = vec3(0.2, 0.5, 0.1);
             vec3 dirt = vec3(0.4, 0.3, 0.2);
             vec3 snow = vec3(0.9, 0.9, 1.0);
