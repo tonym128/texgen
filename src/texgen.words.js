@@ -282,6 +282,7 @@
         "pulse": "c *= sin(u_time*5.0)*0.2+0.8;",
         "flash": "c += vec3(step(0.9, sin(u_time*10.0)));",
         "drift": "p += u_time*0.05;",
+        "tile": "/* Handled by uniform u_tile */",
 
         // LAYERING & MASKING (New)
         "over": "/* layer switch */",
@@ -302,10 +303,16 @@
             let seed = null;
             let width = 512;
             let height = 512;
+            let tile = 0;
 
             for (let i = 0; i < tokens.length; i++) {
                 const token = tokens[i];
                 
+                if (token === 'tile') {
+                    tile = 1;
+                    continue;
+                }
+
                 // Modifiers like seed:123
                 if (token.startsWith('seed:')) {
                     seed = parseFloat(token.split(':')[1]);
@@ -343,6 +350,16 @@
                 if (this.words[token]) {
                     shaderParts.push("// " + token);
                     let snippet = this.words[token];
+
+                    // If tiling is on, swap voronoi for pvoronoi with a standard period
+                    if (tile === 1 && snippet.includes('voronoi(p*')) {
+                        const freqMatch = snippet.match(/voronoi\(p\*([\d\.]+)\)/);
+                        const freq = freqMatch ? freqMatch[1] : "10.0";
+                        snippet = snippet.replace(/voronoi\(p\*[\d\.]+\)/g, `pvoronoi(p*${freq}, ${freq})`);
+                    } else if (tile === 1 && snippet.includes('voronoi(p)')) {
+                        snippet = snippet.replace('voronoi(p)', 'pvoronoi(p, 1.0)');
+                    }
+
                     // If we just had 'inside', the next generator/shape should be masked by f_bg
                     if (i > 0 && tokens[i-1] === 'inside') {
                         snippet = snippet.replace('f = ', 'float f_inner = ');
@@ -367,7 +384,8 @@
                 shader: shaderParts.join("\n"),
                 seed: seed,
                 width: width,
-                height: height
+                height: height,
+                tile: tile
             };
         }
     }

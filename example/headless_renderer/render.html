@@ -55,6 +55,7 @@
             let width = parseInt(urlParams.get('w')) || 512;
             let height = parseInt(urlParams.get('h')) || 512;
             let seed = parseFloat(urlParams.get('seed')) || Math.random() * 100;
+            let tile = parseInt(urlParams.get('tile')) || 0;
 
             const canvas = document.getElementById('out');
             const errorDiv = document.getElementById('error');
@@ -75,6 +76,7 @@
                     if (result.seed !== null) seed = result.seed;
                     if (urlParams.get('w') === null && result.width) width = result.width;
                     if (urlParams.get('h') === null && result.height) height = result.height;
+                    if (urlParams.get('tile') === null && result.tile !== undefined) tile = result.tile;
                 } else {
                     shaderCode = TexGen.decompress(compressedShader);
                     if (!shaderCode) {
@@ -93,7 +95,7 @@
                 canvas.height = height;
 
                 tg.init(shaderCode);
-                tg.render(0);
+                tg.render(0, { u_tile: tile });
 
                 const dataURL = canvas.toDataURL();
 
