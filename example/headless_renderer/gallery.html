@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen Mega Gallery</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #111;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            padding-top: 60px;
+        }
+        h1 { text-align: center; color: #00d1ff; margin-bottom: 5px; }
+        h2 { border-bottom: 2px solid #333; padding-bottom: 10px; margin-top: 40px; color: #ff00d1; }
+        .stats { text-align: center; margin-bottom: 20px; color: #888; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        .item {
+            background: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #333;
+            transition: all 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+        .item:hover { transform: scale(1.05); z-index: 10; border-color: #00d1ff; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .item img { width: 100%; display: block; aspect-ratio: 1/1; background: #000; }
+        .label {
+            font-size: 9px;
+            padding: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: rgba(0,0,0,0.8);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            color: #ccc;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        #progress-fill {
+            height: 100%;
+            background: #00d1ff;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        iframe { display: none; }
+
+        /* Modal Styles */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,1);
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #888;
+        }
+        .close-btn:hover { color: #fff; }
+        .modal-flex { display: flex; gap: 25px; flex-wrap: wrap; }
+        .modal-img { width: 256px; height: 256px; border-radius: 8px; border: 2px solid #333; }
+        .modal-info { flex: 1; min-width: 300px; }
+        .info-group { margin-bottom: 20px; }
+        .info-label { color: #00d1ff; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .info-value { 
+            background: #000; 
+            padding: 10px; 
+            border-radius: 6px; 
+            font-family: monospace; 
+            font-size: 0.85rem; 
+            word-break: break-all; 
+            color: #00ffaa;
+            max-height: 150px;
+            overflow-y: auto;
+            display: block;
+        }
+        .info-url { color: #ffaa00; text-decoration: none; display: block; }
+        .info-url:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+    <h1>TexGen Mega Gallery</h1>
+    <div class="stats" id="stats">Initializing renderer...</div>
+    
+    <h2>Word-Based Textures (100)</h2>
+    <div class="grid" id="words-grid"></div>
+
+    <h2>Procedural Shader Textures (100)</h2>
+    <div class="grid" id="shaders-grid"></div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="modal-flex">
+                <img id="modal-img" class="modal-img" src="" alt="Texture">
+                <div class="modal-info">
+                    <div class="info-group">
+                        <span class="info-label">Generation URL</span>
+                        <a id="info-url" class="info-value info-url" href="#" target="_blank"></a>
+                    </div>
+                    <div class="info-group">
+                        <span class="info-label">Source Code / Prompt</span>
+                        <span id="info-source" class="info-value"></span>
+                    </div>
+                    <div class="info-group">
+                        <span class="info-label">Compressed String</span>
+                        <span id="info-compressed" class="info-value"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden renderer -->
+    <iframe id="renderer" src="render.html"></iframe>
+
+    <!-- Updated path for the example folder -->
+    <script src="../../texgen.js"></script>
+    <script>
+        const wordsGrid = document.getElementById('words-grid');
+        const shadersGrid = document.getElementById('shaders-grid');
+        const stats = document.getElementById('stats');
+        const fill = document.getElementById('progress-fill');
+        const renderer = document.getElementById('renderer');
+        const modal = document.getElementById('modal');
+
+        const colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "orange", "purple", "pink", "gold", "teal", "lime", "azure", "ivory", "maroon", "navy"];
+        const shapes = ["circle", "box", "ring", "star", "heart", "cross", "grid", "stripes", "wave", "spiral", "hex", "flower", "leaf", "gear", "bolt", "shield"];
+        const gens = ["noise", "fbm", "voronoi", "cells", "clouds", "fire", "water", "marble", "wood", "lava", "plasma", "smoke", "mist", "aura", "energy", "crystal"];
+        const mods = ["bright", "vivid", "neon", "soft", "dark", "huge", "tiny", "distort", "warp", "metallic", "shiny", "glow", "outline", "vortex", "ripple"];
+
+        function generateUniqueShader(i) {
+            const freq = (1.0 + i * 0.5).toFixed(1);
+            const r = Math.random().toFixed(2);
+            const g = Math.random().toFixed(2);
+            const b = Math.random().toFixed(2);
+            const mode = i % 3;
+            
+            let body = "";
+            if (mode === 0) {
+                body = `void main() { float n = fbm(vUv * ${freq}, ${freq}); vec3 col = mix(vec3(${r},${g},${b}), vec3(${g},${b},${r}), n); gl_FragColor = vec4(col, 1.0); }`;
+            } else if (mode === 1) {
+                body = `void main() { float v = voronoi(vUv * ${freq}); vec3 col = vec3(v * ${r}, v * ${g}, v * ${b}); gl_FragColor = vec4(col, 1.0); }`;
+            } else {
+                body = `void main() { float n = noise(vUv * ${freq} + u_time * 0.1, ${freq}); float s = sin(vUv.x * 10.0 + n * 5.0); gl_FragColor = vec4(vec3(s * ${r}, s * ${g}, s * ${b}), 1.0); }`;
+            }
+            return {
+                code: body,
+                compressed: TexGen.compress(body)
+            };
+        }
+
+        let queue = [];
+        let metadata = [];
+        let completed = 0;
+        const total = 200;
+
+        function generateQueue() {
+            // 100 Unique Word Images
+            for (let i = 0; i < 100; i++) {
+                const c = colors[Math.floor(Math.random() * colors.length)];
+                const s = shapes[Math.floor(Math.random() * shapes.length)];
+                const g = gens[Math.floor(Math.random() * gens.length)];
+                const m = mods[Math.floor(Math.random() * mods.length)];
+                const prompt = `${c} ${s} ${g} ${m}`;
+                const seed = i * 7.7;
+                const url = `render.html?words=${encodeURIComponent(prompt)}&seed=${seed.toFixed(2)}&w=256&h=256&post`;
+                
+                const item = { type: 'words', value: prompt, seed: seed, url: url };
+                queue.push(item);
+                metadata.push({
+                    type: 'words',
+                    source: prompt,
+                    compressed: "N/A (Derived from words)",
+                    url: url
+                });
+            }
+
+            // 100 Unique Procedural Compressed Shaders
+            for (let i = 0; i < 100; i++) {
+                const res = generateUniqueShader(i);
+                const seed = i * 13.3;
+                const url = `render.html?s=${res.compressed}&seed=${seed.toFixed(2)}&w=256&h=256&post`;
+                
+                const item = { type: 's', value: res.compressed, source: res.code, seed: seed, url: url };
+                queue.push(item);
+                metadata.push({
+                    type: 's',
+                    source: res.code,
+                    compressed: res.compressed,
+                    url: url
+                });
+            }
+        }
+
+        function processNext() {
+            if (completed >= total) {
+                stats.innerText = `Finished rendering 200 textures! Click any image for details.`;
+                return;
+            }
+
+            const item = queue[completed];
+            renderer.src = item.url;
+            stats.innerText = `Rendering ${completed + 1}/${total}...`;
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'texgen-render') {
+                const index = completed;
+                
+                if (!metadata[index]) {
+                    console.warn("Received message for unexpected index:", index);
+                    return;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.onclick = () => showModal(index, event.data.dataURL);
+                
+                const img = new Image();
+                img.src = event.data.dataURL;
+                div.appendChild(img);
+                
+                const label = document.createElement('div');
+                label.className = 'label';
+                label.innerText = metadata[index].source.substring(0, 30);
+                div.appendChild(label);
+                
+                if (index < 100) {
+                    wordsGrid.appendChild(div);
+                } else {
+                    shadersGrid.appendChild(div);
+                }
+
+                completed++;
+                fill.style.width = `${(completed / total) * 100}%`;
+                setTimeout(processNext, 10);
+            }
+        });
+
+        function showModal(index, dataURL) {
+            const data = metadata[index];
+            document.getElementById('modal-img').src = dataURL;
+            document.getElementById('info-url').href = data.url;
+            document.getElementById('info-url').innerText = window.location.origin + "/" + data.url;
+            document.getElementById('info-source').innerText = data.source;
+            document.getElementById('info-compressed').innerText = data.compressed;
+            modal.style.display = 'flex';
+        }
+
+        document.querySelector('.close-btn').onclick = () => modal.style.display = 'none';
+        window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+        // Start when iframe is ready
+        renderer.onload = () => {
+            if (completed === 0 && queue.length === 0) {
+                generateQueue();
+                processNext();
+            }
+        };
+    </script>
+</body>
+</html>

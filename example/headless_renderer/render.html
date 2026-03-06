@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TexGen Headless Renderer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a1a;
+            color: #eee;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+        #container {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            display: block;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        #error {
+            padding: 20px;
+            color: #ff5555;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="out"></canvas>
+        <div id="error"></div>
+    </div>
+
+    <!-- Updated paths for the example folder -->
+    <script src="../../texgen.js"></script>
+    <script src="../../src/texgen.words.js"></script>
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const compressedShader = urlParams.get('s');
+            const words = urlParams.get('words');
+            let width = parseInt(urlParams.get('w')) || 512;
+            let height = parseInt(urlParams.get('h')) || 512;
+            let seed = parseFloat(urlParams.get('seed')) || Math.random() * 100;
+
+            const canvas = document.getElementById('out');
+            const errorDiv = document.getElementById('error');
+
+            if (!compressedShader && !words) {
+                errorDiv.innerText = "No shader provided. Use ?s=[compressed_shader] or ?words=[words]";
+                errorDiv.style.display = 'block';
+                canvas.style.display = 'none';
+                return;
+            }
+
+            try {
+                let shaderCode;
+                if (words) {
+                    const parser = new TexGen.Words();
+                    const result = parser.parse(words);
+                    shaderCode = result.shader;
+                    if (result.seed !== null) seed = result.seed;
+                    if (urlParams.get('w') === null && result.width) width = result.width;
+                    if (urlParams.get('h') === null && result.height) height = result.height;
+                } else {
+                    shaderCode = TexGen.decompress(compressedShader);
+                    if (!shaderCode) {
+                        throw new Error("Failed to decompress shader.");
+                    }
+                }
+
+                const tg = new TexGen({
+                    canvas: canvas,
+                    width: width,
+                    height: height,
+                    seed: seed
+                });
+
+                canvas.width = width;
+                canvas.height = height;
+
+                tg.init(shaderCode);
+                tg.render(0);
+
+                const dataURL = canvas.toDataURL();
+
+                // 1. Automatic Download
+                const downloadName = urlParams.get('download');
+                if (downloadName !== null) {
+                    const link = document.createElement('a');
+                    link.download = downloadName || 'texgen-texture.png';
+                    link.href = dataURL;
+                    link.click();
+                }
+
+                // 2. Post to Parent Window
+                if (urlParams.get('post') !== null) {
+                    window.parent.postMessage({
+                        type: 'texgen-render',
+                        dataURL: dataURL,
+                        seed: seed,
+                        width: width,
+                        height: height
+                    }, '*');
+                }
+                
+            } catch (e) {
+                errorDiv.innerText = "Error: " + e.message;
+                errorDiv.style.display = 'block';
+                canvas.style.display = 'none';
+            }
+        })();
+    </script>
+</body>
+</html>
