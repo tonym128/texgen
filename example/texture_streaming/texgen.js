@@ -457,8 +457,7 @@ class TexGen {
         if (idleWorker) return idleWorker;
 
         // Create a new worker if pool is small
-        const maxWorkers = Math.min(navigator.hardwareConcurrency || 4, 8);
-        if (this._workerPool.length < maxWorkers) {
+        if (this._workerPool.length < 4) {
             const classCode = TexGen.toString();
             const workerCode = [
                 'const UTILS = ' + JSON.stringify(UTILS) + ';',
@@ -470,8 +469,7 @@ class TexGen {
                 '        const { id, shaderCode, options } = e.data;',
                 '        if (!tgInstance) tgInstance = new TexGen(options);',
                 '        const result = await tgInstance.bake(shaderCode, options);',
-                '        const transfer = (typeof ImageBitmap !== "undefined" && result instanceof ImageBitmap) ? [result] : [];',
-                '        self.postMessage({ id, result }, transfer);',
+                '        self.postMessage({ id, result });',
                 '    } catch (err) {',
                 '        self.postMessage({ id: e.data.id, error: String(err.message || err) });',
                 '    }',
@@ -489,17 +487,12 @@ class TexGen {
                     if (error) {
                         cb.reject(new Error(error));
                     } else if (typeof ImageBitmap !== 'undefined' && result instanceof ImageBitmap) {
-                        // Only convert to DataURL if explicitly requested as 'dataURL'
-                        // and we are NOT in a performance-critical mode
-                        if (cb.options.format === 'dataURL') {
-                            const cvs = document.createElement('canvas');
-                            cvs.width = result.width; cvs.height = result.height;
-                            const ctx = cvs.getContext('2d');
-                            ctx.drawImage(result, 0, 0);
-                            cb.resolve(cvs.toDataURL());
-                        } else {
-                            cb.resolve(result);
-                        }
+                        // Convert ImageBitmap to DataURL on main thread
+                        const cvs = document.createElement('canvas');
+                        cvs.width = result.width; cvs.height = result.height;
+                        const ctx = cvs.getContext('2d');
+                        ctx.drawImage(result, 0, 0);
+                        cb.resolve(cvs.toDataURL());
                     } else {
                         cb.resolve(result);
                     }
@@ -518,22 +511,11 @@ class TexGen {
 
     static _processQueue() {
         if (this._workerQueue.length === 0) return;
-        
-        // Find ALL available workers and fill them
-        let idleWorker;
-        while (this._workerQueue.length > 0 && (idleWorker = this._workerPool.find(w => !w.busy))) {
-            const task = this._workerQueue.shift();
-            this._executeTask(idleWorker, task);
-        }
-        
-        // If we still have tasks and can grow the pool, do it
-        if (this._workerQueue.length > 0) {
-            const newWorker = this._getWorker();
-            if (newWorker && !newWorker.busy) {
-                const task = this._workerQueue.shift();
-                this._executeTask(newWorker, task);
-            }
-        }
+        const workerEntry = this._getWorker();
+        if (!workerEntry) return;
+
+        const task = this._workerQueue.shift();
+        this._executeTask(workerEntry, task);
     }
 
     static _executeTask(workerEntry, task) {
@@ -545,7 +527,7 @@ class TexGen {
 
     static async bakeAsync(shaderCode, options = {}) {
         if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') {
-            const tg = new TexGen(options);
+            const tg = new TexGen();
             return tg.bake(shaderCode, options);
         }
 
@@ -561,12 +543,6 @@ class TexGen {
         });
     }
 }
-
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) { define([], factory); }
-    else if (typeof module === 'object' && module.exports) { module.exports = factory(); }
-    else { root.TexGen = factory(); }
-}(typeof self !== 'undefined' ? self : this, function () { return TexGen; }));
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) { define([], factory); }

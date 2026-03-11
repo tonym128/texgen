@@ -5,7 +5,6 @@
 const UTILS = `
 uniform float u_seed;
 uniform int u_bakeMode;
-uniform int u_tile; // 0 = standard, 1 = seamless tiling
 
 float random (in vec2 st) {
     return fract(sin(dot(st.xy + u_seed, vec2(12.9898,78.233))) * 43758.5453123);
@@ -14,11 +13,8 @@ float random (in vec2 st) {
 float noise(vec2 st, float p) {
     vec2 i = floor(st);
     vec2 f = fract(st);
-    
-    // Tiling logic: if u_tile is 1, use mod to wrap coordinates
-    vec2 i0 = (u_tile == 1) ? mod(i, p) : i;
-    vec2 i1 = (u_tile == 1) ? mod(i + 1.0, p) : i + 1.0;
-    
+    vec2 i0 = mod(i, p);
+    vec2 i1 = mod(i + 1.0, p);
     float a = random(i0);
     float b = random(vec2(i1.x, i0.y));
     float c = random(vec2(i0.x, i1.y));
@@ -45,46 +41,13 @@ vec2 hash22(vec2 p) {
 }
 
 float voronoi(vec2 x) {
-    // Current period p is not passed to voronoi in original, but we can infer from x
-    // To support tiling voronoi, we need to wrap the grid cells.
-    // For simplicity in the generic voronoi, we use floor(x) and fract(x).
     vec2 n = floor(x);
     vec2 f = fract(x);
-    float m_dist = 8.0;
+    float m_dist = 1.0;
     for(int j=-1; j<=1; j++) {
         for(int i=-1; i<=1; i++) {
             vec2 g = vec2(float(i),float(j));
-            vec2 neighbor = n + g;
-            
-            // Tiling check: wrap cell coordinates if tiling is enabled
-            // Note: This assumes the input x was scaled by an integer period for perfect tiling
-            if (u_tile == 1) {
-                // We don't have the explicit period here, 
-                // but usually voronoi is used with p*vUv.
-                // For a truly generic tiling voronoi, the user should provide period.
-                // We will assume 10.0 as a default wrap if not specified or just use standard.
-            }
-            
-            vec2 o = hash22(neighbor);
-            vec2 r = g + o - f;
-            float d = dot(r,r);
-            if(d < m_dist) m_dist = d;
-        }
-    }
-    return sqrt(m_dist);
-}
-
-// Improved Tiling Voronoi that takes a period
-float pvoronoi(vec2 x, float p) {
-    vec2 n = floor(x);
-    vec2 f = fract(x);
-    float m_dist = 8.0;
-    for(int j=-1; j<=1; j++) {
-        for(int i=-1; i<=1; i++) {
-            vec2 g = vec2(float(i),float(j));
-            vec2 neighbor = n + g;
-            if (u_tile == 1) neighbor = mod(neighbor, p);
-            vec2 o = hash22(neighbor);
+            vec2 o = hash22(n + g);
             vec2 r = g + o - f;
             float d = dot(r,r);
             if(d < m_dist) m_dist = d;
@@ -203,21 +166,14 @@ class TexGen {
 
     static decompress(base64, customMap = null) {
         try {
-            let binaryString;
+            let decompressed;
             if (typeof atob === 'function') {
-                binaryString = atob(base64);
+                decompressed = atob(base64);
             } else if (typeof Buffer !== 'undefined') {
-                binaryString = Buffer.from(base64, 'base64').toString('binary');
+                decompressed = Buffer.from(base64, 'base64').toString('utf8');
             } else {
                 return null;
             }
-
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            
-            let decompressed = new TextDecoder().decode(bytes);
             
             const map = customMap ? Object.assign({}, TOKEN_MAP, customMap) : TOKEN_MAP;
             const entries = Object.entries(map).sort((a, b) => b[1].length - a[1].length);
@@ -235,17 +191,10 @@ class TexGen {
         for (const [token, replacement] of entries) {
             compressed = compressed.split(token).join(replacement);
         }
-
-        const bytes = new TextEncoder().encode(compressed);
-        let binaryString = "";
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binaryString += String.fromCharCode(bytes[i]);
-        }
-
         if (typeof btoa === 'function') {
-            return btoa(binaryString);
+            return btoa(compressed);
         } else if (typeof Buffer !== 'undefined') {
-            return Buffer.from(binaryString, 'binary').toString('base64');
+            return Buffer.from(compressed).toString('base64');
         }
         return null;
     }
@@ -436,7 +385,6 @@ class TexGen {
         gl.uniform3f(gl.getUniformLocation(this.program, 'u_viewDir'), 0.0, 0.0, 1.0);
         gl.uniform1f(gl.getUniformLocation(this.program, 'u_seed'), this.seed);
         gl.uniform1i(gl.getUniformLocation(this.program, 'u_bakeMode'), uniforms.u_bakeMode || 0);
-        gl.uniform1i(gl.getUniformLocation(this.program, 'u_tile'), uniforms.u_tile || 0);
 
         let textureUnit = 0;
         const activeTextures = [];
@@ -595,12 +543,6 @@ class TexGen {
         });
     }
 }
-
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) { define([], factory); }
-    else if (typeof module === 'object' && module.exports) { module.exports = factory(); }
-    else { root.TexGen = factory(); }
-}(typeof self !== 'undefined' ? self : this, function () { return TexGen; }));
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) { define([], factory); }

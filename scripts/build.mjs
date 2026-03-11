@@ -53,12 +53,16 @@ await esbuild.build({
 
 console.log('✅ Distribution files generated in dist/');
 
-// 3. Sync to Examples
+// 3. Sync to Examples and Root
 const examples = [
     'platformer', 'marble_roller', 'maze3d', 'texture_generator', 
     'flight_sim', 'card_roguelike', 'solitaire', 'multipass_post', 
     'texture_streaming', 'playground', 'carded'
 ];
+
+// Sync to root
+fs.copyFileSync(path.resolve(dist, 'texgen.js'), path.resolve(root, 'texgen.js'));
+fs.copyFileSync(path.resolve(dist, 'texgen.mjs'), path.resolve(root, 'texgen.mjs'));
 
 examples.forEach(ex => {
     const dest = path.resolve(root, `example/${ex}/texgen.js`);
