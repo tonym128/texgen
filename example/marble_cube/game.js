@@ -53,7 +53,7 @@ class MarbleCubeGame {
         this.activeFaceId = 0;
         this.isTransitioning = false;
         this.transitionTime = 0;
-        this.transitionDuration = 0.8;
+        this.transitionDuration = 1.2;
         this.transitionData = null;
         
         this.targetBaseQuat = new THREE.Quaternion();
@@ -296,7 +296,16 @@ class MarbleCubeGame {
         this.boxGroup.visible = true;
 
         this.wormholeGroup = new THREE.Group(); this.boxGroup.add(this.wormholeGroup);
-        this.facesData = []; this.wormholes = []; this.goalStar = null; this.tilt = { x: 0, y: 0 }; this.targetTilt = { x: 0, y: 0 }; this.pivotGroup.rotation.set(0, 0, 0);
+        this.facesData = []; this.wormholes = []; this.goalStar = null; 
+        this.tilt = { x: 0, y: 0 }; this.targetTilt = { x: 0, y: 0 }; 
+        this.pivotGroup.rotation.set(0, 0, 0);
+        this.boxGroup.quaternion.set(0, 0, 0, 1);
+        this.targetBaseQuat.set(0, 0, 0, 1);
+        this.isTransitioning = false;
+        this.transitionData = null;
+        this.activeFaceId = 0;
+        this.marble.mesh.scale.setScalar(1.0);
+        
         const holeGeo = new THREE.PlaneGeometry(12, 12), rimGeo = new THREE.TorusGeometry(6, 0.5, 8, 32), glassGeo = new THREE.PlaneGeometry(100, 100);
         for (let i = 0; i < 6; i++) {
             const group = new THREE.Group(); const config = this.facesConfig[i];
@@ -349,7 +358,7 @@ class MarbleCubeGame {
 
     resetMarble() {
         const face = this.facesData[0];
-        face.group.updateMatrixWorld();
+        this.pivotGroup.updateMatrixWorld(true);
         const startPosWorld = new THREE.Vector3(-43.75, -43.75, this.marble.radius).applyMatrix4(face.group.matrixWorld);
         this.marble.body.position.copy(startPosWorld);
         this.marble.body.velocity.set(0, 0, 0);
@@ -418,7 +427,13 @@ class MarbleCubeGame {
         
         this.stats.holesUsed++;
 
+        // Get marble local position in boxGroup space
+        this.boxGroup.updateMatrixWorld(true);
+        const invBox = this.boxGroup.matrixWorld.clone().invert();
+        const startPos = new THREE.Vector3().copy(this.marble.body.position).applyMatrix4(invBox);
+
         this.transitionData = {
+            startPos,
             targetFaceId: targetHole.face, targetHole, curve: w.curve, reverseCurve: w.h2.id === hole.id,
             startQuat: this.boxGroup.quaternion.clone(),
             targetQuat: new THREE.Quaternion().setFromEuler(new THREE.Euler(...this.facesConfig[targetHole.face].upQuat)),
@@ -470,16 +485,33 @@ class MarbleCubeGame {
                 this.transitionTime += dt; const progress = Math.min(this.transitionTime / this.transitionDuration, 1.0);
                 const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
                 this.boxGroup.quaternion.slerpQuaternions(this.transitionData.startQuat, this.transitionData.targetQuat, ease);
+                
                 if (this.transitionData.curve) {
                     this.boxGroup.updateMatrixWorld(true);
-                    this.marble.body.position.copy(this.transitionData.curve.getPoint(this.transitionData.reverseCurve ? 1 - progress : progress).applyMatrix4(this.boxGroup.matrixWorld));
+                    const curvePoint = this.transitionData.curve.getPoint(this.transitionData.reverseCurve ? 1 - progress : progress);
+                    // Smoothly blend from actual entry position to the hole center over the first 20%
+                    const blend = Math.min(progress / 0.2, 1.0);
+                    const pos = new THREE.Vector3().lerpVectors(this.transitionData.startPos, curvePoint, blend);
+                    this.marble.body.position.copy(pos.applyMatrix4(this.boxGroup.matrixWorld));
                     this.marble.body.velocity.set(0, 0, 0); this.marble.mesh.position.copy(this.marble.body.position); skipMarbleDelta = true;
                 }
-                if (progress < 0.4) this.marble.mesh.scale.setScalar(Math.max(0.001, 1.0 - progress * 2.5));
-                else if (!this.transitionData.swapped) {
-                    this.transitionData.swapped = true; this.activeFaceId = this.transitionData.targetFaceId;
-                    this.targetBaseQuat.copy(this.transitionData.targetQuat); this.marble.ignoreHoleId = this.transitionData.targetHole.id;
-                } else this.marble.mesh.scale.setScalar((progress - 0.4) / 0.6);
+                
+                // Gentler scaling - stay full size until 20% in, then shrink to 0 by 45%
+                let scale = 1.0;
+                if (progress < 0.45) {
+                    scale = Math.max(0.001, 1.0 - Math.pow(Math.max(0, (progress - 0.1) / 0.35), 2));
+                } else if (!this.transitionData.swapped) {
+                    this.transitionData.swapped = true; 
+                    this.activeFaceId = this.transitionData.targetFaceId;
+                    this.targetBaseQuat.copy(this.transitionData.targetQuat); 
+                    this.marble.ignoreHoleId = this.transitionData.targetHole.id;
+                    scale = 0.001;
+                } else {
+                    // Re-emerge smoothly
+                    scale = Math.pow((progress - 0.45) / 0.55, 0.5);
+                }
+                this.marble.mesh.scale.setScalar(scale);
+
                 if (progress >= 1.0) {
                     this.marble.mesh.scale.setScalar(1.0); this.isTransitioning = false;
                     this.pivotGroup.updateMatrixWorld(true); const targetFace = this.facesData[this.activeFaceId];
@@ -736,7 +768,6 @@ class MarbleCubeGame {
         this.state = 'FINISHED'; if (document.pointerLockElement) document.exitPointerLock();
         document.getElementById('fail-banner').style.display = 'block';
     }
-    updateMarblePosition() { this.marble.mesh.position.copy(this.marble.body.position); this.marble.pos.copy(this.marble.body.position); }
 
     generateVoronoiShards(size, numPieces) {
         const points = [];
@@ -769,17 +800,6 @@ class MarbleCubeGame {
             if (poly.length > 2) cells.push(poly);
         }
         return cells;
-    }
-
-    resetMarble() {
-        const face = this.facesData[0];
-        face.group.updateMatrixWorld();
-        const startPosWorld = new THREE.Vector3(-43.75, -43.75, this.marble.radius).applyMatrix4(face.group.matrixWorld);
-        this.marble.body.position.copy(startPosWorld);
-        this.marble.body.velocity.set(0, 0, 0);
-        this.marble.body.angularVelocity.set(0, 0, 0);
-        this.marble.ignoreHoleId = null;
-        this.marble.mesh.position.copy(this.marble.body.position);
     }
 
     snapToFace(faceId) { this.activeFaceId = faceId; this.targetBaseQuat.setFromEuler(new THREE.Euler(...this.facesConfig[faceId].upQuat)); }

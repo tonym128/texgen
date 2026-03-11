@@ -16,17 +16,9 @@ global.THREE = {
     PointLight: class { constructor() { this.position = { set() {}, copy() { return this; }, add() { return this; } }; this.shadow = { mapSize: { set() {} } }; } },
     Group: class { 
         constructor() {
-            this.position = { set() {}, clone() { return new global.THREE.Vector3(); } };
+            this.position = new global.THREE.Vector3();
             this.rotation = { set() {}, invert() { return this; } };
-            this.quaternion = { 
-                setFromEuler() { return this; }, 
-                slerpQuaternions() { return this; }, 
-                slerp() { return this; },
-                clone() { return new global.THREE.Quaternion(); },
-                invert() { return this; },
-                copy() { return this; },
-                multiply() { return this; }
-            };
+            this.quaternion = new global.THREE.Quaternion();
             this.matrixWorld = { applyToBufferAttribute() {}, clone() { return this; }, invert() { return this; } };
             this.visible = true;
         }
@@ -121,6 +113,7 @@ global.THREE = {
     },
     Quaternion: class { 
         constructor(){this.x=0;this.y=0;this.z=0;this.w=1;}
+        set(x,y,z,w) { this.x=x; this.y=y; this.z=z; this.w=w; return this; }
         setFromEuler() { return this; } 
         setFromAxisAngle() { return this; }
         setFromRotationMatrix() { return this; }
