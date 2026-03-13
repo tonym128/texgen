@@ -3,20 +3,30 @@
 const fs = require('fs');
 const path = require('path');
 const TexGen = require('..');
+const WordParser = require('../src/texgen.words.js');
 
 function run() {
-    const [, , command, inputFile, ...args] = process.argv;
+    let args = process.argv.slice(2);
+    const useWords = args.includes('--words') || args.includes('-w');
+    args = args.filter(a => a !== '--words' && a !== '-w');
+
+    const command = args[0];
+    const inputFile = args[1];
+    const extraArgs = args.slice(2);
 
     if (!command || !inputFile) {
         console.log(`
 TexGen CLI
-Usage: texgen <command> <file.glsl> [options]
+Usage: texgen <command> <file.glsl|words.txt> [options]
 
 Commands:
-  compress   Reads the GLSL file and outputs the compressed Base64 payload.
-  bake       Reads the GLSL file and outputs a baked PNG to disk.
+  compress   Reads the file and outputs the compressed Base64 payload.
+  bake       Reads the file and outputs a baked PNG to disk.
              Options: [width] [height] [output_file.png]
              Example: texgen bake my_shader.glsl 1024 1024 output.png
+
+Options:
+  --words, -w  Treat the input file as natural language "Words" instead of GLSL.
 `);
         process.exit(1);
     }
@@ -27,7 +37,14 @@ Commands:
         process.exit(1);
     }
 
-    const shaderCode = fs.readFileSync(fullPath, 'utf8');
+    let shaderCode = fs.readFileSync(fullPath, 'utf8');
+
+    if (useWords) {
+        console.log("Parsing TexGen Words...");
+        const parser = new WordParser();
+        const result = parser.parse(shaderCode);
+        shaderCode = result.shader;
+    }
 
     if (command === 'compress') {
         try {
@@ -49,9 +66,9 @@ Commands:
             const gl = require('gl');
             const { createCanvas } = require('canvas');
 
-            const width = parseInt(args[0]) || 512;
-            const height = parseInt(args[1]) || 512;
-            const outputFile = args[2] || 'output.png';
+            const width = parseInt(extraArgs[0]) || 512;
+            const height = parseInt(extraArgs[1]) || 512;
+            const outputFile = extraArgs[2] || 'output.png';
 
             console.log(`Baking ${width}x${height} texture to ${outputFile}...`);
 
