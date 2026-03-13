@@ -1,8 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 const TexGen = require('./texgen.js');
 
 describe('TexGen - Async Functionality', () => {
     
+    afterEach(() => {
+        delete TexGen._workerPool;
+        delete TexGen._workerId;
+        delete TexGen._workerQueue;
+    });
+
     it('should fall back to sync bake if Worker is not available', async () => {
         const originalWorker = global.Worker;
         delete global.Worker;
@@ -21,7 +27,6 @@ describe('TexGen - Async Functionality', () => {
 
     it('should correctly serialize worker code and handle messages', async () => {
         const postMessageSpy = vi.fn();
-        const terminateSpy = vi.fn();
         
         global.Blob = class {
             constructor(parts) { this.parts = parts; }
@@ -35,12 +40,15 @@ describe('TexGen - Async Functionality', () => {
         global.Worker = class {
             constructor(url) {
                 this.url = url;
+            }
+            postMessage(data) { 
+                postMessageSpy(data); 
+                // Simulate worker response with ID
                 setTimeout(() => {
-                    if (this.onmessage) this.onmessage({ data: { result: 'data:image/png;base64,async-mock' } });
+                    if (this.onmessage) this.onmessage({ data: { id: data.id, result: 'data:image/png;base64,async-mock' } });
                 }, 10);
             }
-            postMessage(data) { postMessageSpy(data); }
-            terminate() { terminateSpy(); }
+            terminate() {}
         };
 
         const shader = "void main() { gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); }";
@@ -51,7 +59,6 @@ describe('TexGen - Async Functionality', () => {
             shaderCode: shader,
             options: { width: 100 }
         }));
-        expect(terminateSpy).toHaveBeenCalled();
     });
 
     it('should handle worker errors gracefully', async () => {
@@ -59,12 +66,12 @@ describe('TexGen - Async Functionality', () => {
         global.URL = { createObjectURL: () => 'blob:mock' };
         
         global.Worker = class {
-            constructor(url) {
+            constructor(url) {}
+            postMessage(data) {
                 setTimeout(() => {
-                    if (this.onmessage) this.onmessage({ data: { error: 'Worker Simulation Error' } });
+                    if (this.onmessage) this.onmessage({ data: { id: data.id, error: 'Worker Simulation Error' } });
                 }, 10);
             }
-            postMessage() {}
             terminate() {}
         };
 

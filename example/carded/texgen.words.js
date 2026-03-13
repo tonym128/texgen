@@ -5,7 +5,7 @@
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) { define(['TexGen'], factory); }
-    else if (typeof module === 'object' && module.exports) { module.exports = factory(require('../texgen.js')); }
+    else if (typeof module === 'object' && module.exports) { module.exports = factory(require('./texgen.js')); }
     else { root.TexGenWords = factory(root.TexGen); }
 }(typeof self !== 'undefined' ? self : this, function (TexGen) {
 
@@ -196,7 +196,6 @@
         "mirror": "p = abs(p-0.5)+0.5;",
         "flip": "p = 1.0 - p;",
         "repeat": "p = fract(p*2.0);",
-        "tile": "p = fract(p*4.0);",
         "zoom": "p = (p-0.5)*0.5 + 0.5;",
         "perspective": "p.x /= (p.y + 0.5);",
         "distort": "p += sin(p.yx*10.0)*0.05;",
@@ -254,9 +253,6 @@
         "and": "/* separator */",
         "with": "/* separator */",
         "onto": "/* separator */",
-        "under": "/* separator */",
-        "over": "/* separator */",
-        "inside": "p = (p-0.5)*2.0 + 0.5;",
         "outside": "p = (p-0.5)*0.5 + 0.5;",
         "between": "p = fract(p*2.0);",
         "around": "float r14 = length(p-0.5); p = vec2(r14, atan(p.y-0.5, p.x-0.5)/6.28 + 0.5);",
@@ -282,12 +278,8 @@
         "pulse": "c *= sin(u_time*5.0)*0.2+0.8;",
         "flash": "c += vec3(step(0.9, sin(u_time*10.0)));",
         "drift": "p += u_time*0.05;",
-        "tile": "/* Handled by uniform u_tile */",
 
         // LAYERING & MASKING (New)
-        "over": "/* layer switch */",
-        "under": "/* layer switch */",
-        "inside": "/* mask logic */",
         "outline": "f = abs(f) < 0.02 ? 1.0 : 0.0; c = mix(c, c*f, 0.5);",
         "glow": "f = pow(max(0.0, 1.0 - f), 5.0); c += c * f;"
     };

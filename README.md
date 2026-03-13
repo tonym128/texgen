@@ -8,6 +8,39 @@ TexGen is a powerful, web-based procedural texture generator that leverages GLSL
 - **Improved Precision**: Library now defaults to `highp` precision, fixing heightmap artifacts on mobile GPUs.
 - **TypeScript Support**: Full `.d.ts` definitions and a browser-ready TypeScript gallery.
 
+## 📦 Installation
+
+Install via npm:
+```bash
+npm install texgen
+```
+
+### Usage
+
+**ES Modules:**
+```javascript
+import TexGen from 'texgen';
+import Words from 'texgen/words';
+
+const tg = new TexGen();
+const parser = new Words();
+```
+
+**CommonJS:**
+```javascript
+const TexGen = require('texgen');
+const Words = require('texgen/words');
+```
+
+**CLI Tool:**
+```bash
+# Compress a shader to Base64
+npx texgen compress my_shader.glsl
+
+# Bake a shader to a PNG file (requires gl and canvas)
+npx texgen bake my_shader.glsl 1024 1024 output.png
+```
+
 ## Features
 
 - **Live GLSL Editor:** Write and compile shaders instantly with real-time feedback.

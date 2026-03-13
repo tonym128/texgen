@@ -10,6 +10,10 @@
       "types": "./dist/texgen.d.ts",
       "import": "./dist/texgen.mjs",
       "require": "./dist/texgen.js"
+    },
+    "./words": {
+      "import": "./dist/texgen.words.mjs",
+      "require": "./dist/texgen.words.js"
     }
   },
   "bin": {
@@ -19,7 +23,9 @@
     "dist",
     "src",
     "bin",
-    "README_LIB.md"
+    "README.md",
+    "README_LIB.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "make build",

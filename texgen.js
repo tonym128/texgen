@@ -469,7 +469,10 @@ class TexGen {
                 '        const { id, shaderCode, options } = e.data;',
                 '        if (!tgInstance) tgInstance = new TexGen(options);',
                 '        const result = await tgInstance.bake(shaderCode, options);',
-                '        self.postMessage({ id, result });',
+                '        const transfer = [];',
+                '        if (result instanceof ImageBitmap) transfer.push(result);',
+                '        if (result && result.buffer instanceof ArrayBuffer) transfer.push(result.buffer);',
+                '        self.postMessage({ id, result }, transfer);',
                 '    } catch (err) {',
                 '        self.postMessage({ id: e.data.id, error: String(err.message || err) });',
                 '    }',
@@ -482,19 +485,19 @@ class TexGen {
             
             worker.onmessage = (e) => {
                 const { id, result, error } = e.data;
-                const cb = workerEntry.callbacks.get(id);
-                if (cb) {
+                const task = workerEntry.callbacks.get(id);
+                if (task) {
                     if (error) {
-                        cb.reject(new Error(error));
-                    } else if (typeof ImageBitmap !== 'undefined' && result instanceof ImageBitmap) {
-                        // Convert ImageBitmap to DataURL on main thread
+                        task.reject(new Error(error));
+                    } else if (typeof ImageBitmap !== 'undefined' && result instanceof ImageBitmap && task.options.format !== 'bitmap') {
+                        // Convert ImageBitmap to DataURL on main thread (default fallback)
                         const cvs = document.createElement('canvas');
                         cvs.width = result.width; cvs.height = result.height;
                         const ctx = cvs.getContext('2d');
                         ctx.drawImage(result, 0, 0);
-                        cb.resolve(cvs.toDataURL());
+                        task.resolve(cvs.toDataURL());
                     } else {
-                        cb.resolve(result);
+                        task.resolve(result);
                     }
                     workerEntry.callbacks.delete(id);
                 }

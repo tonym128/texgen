@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const TexGen = require('../texgen.js');
+const TexGen = require('..');
 
 function run() {
     const [, , command, inputFile, ...args] = process.argv;
@@ -61,7 +61,8 @@ Commands:
                 process.exit(1);
             }
 
-            const tg = new TexGen({ gl: context, width, height });
+            const canvas = createCanvas(width, height);
+            const tg = new TexGen({ gl: context, canvas, width, height });
             
             tg.init(shaderCode);
             tg.render();
@@ -69,7 +70,6 @@ Commands:
             const pixels = new Uint8Array(width * height * 4);
             context.readPixels(0, 0, width, height, context.RGBA, context.UNSIGNED_BYTE, pixels);
 
-            const canvas = createCanvas(width, height);
             const ctx = canvas.getContext('2d');
             const imgData = ctx.createImageData(width, height);
             

@@ -794,6 +794,10 @@ function processGameAction(playerId, action, payload) {
                 
                 // Create second hand
                 p.hands.push({ cards: [splitCard], status: 'playing', bet: currentHand.bet });
+                
+                // Reset index to ensure we process from first hand
+                p.currentHandIndex = 0;
+                
                 dbLogAction(State.currentGameId, playerId, 'SPLIT', '');
                 broadcast({ type: 'NOTIFICATION', msg: `${p.name} splits their hand.` });
             }
