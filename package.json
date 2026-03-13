@@ -1,6 +1,6 @@
 {
-  "name": "texgen",
-  "version": "1.0.0",
+  "name": "texgenjs",
+  "version": "1.1.0",
   "description": "A lightweight procedural texture generation library using GLSL.",
   "main": "./dist/texgen.js",
   "module": "./dist/texgen.mjs",
@@ -17,7 +17,7 @@
     }
   },
   "bin": {
-    "texgen": "./bin/cli.js"
+    "texgen": "bin/cli.js"
   },
   "files": [
     "dist",

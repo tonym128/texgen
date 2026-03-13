@@ -35,3 +35,6 @@ coverage/
 .project
 .classpath
 .settings/
+
+.gemini/
+gha-creds-*.json
