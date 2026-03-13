@@ -24,7 +24,7 @@ const SHADERS = {
 
     hole: `void main() { vec2 st = vUv - 0.5; float d = length(st); float mask = smoothstep(0.5, 0.45, d); float shadow = smoothstep(0.45, 0.3, d); vec3 color = mix(vec3(0.0), vec3(0.1), shadow); gl_FragColor = vec4(color, mask); }`,
 
-    goal: `void main() { vec2 st = vUv - 0.5; float d = length(st); float ring1 = smoothstep(0.5, 0.4, d) - smoothstep(0.3, 0.2, d); float ring2 = smoothstep(0.2, 0.1, d) - smoothstep(0.1, 0.0, d); vec3 col = 0.5 + 0.5 * cos(u_time * 5.0 + vUv.xyx + vec3(0,2,4)); gl_FragColor = vec4(col, ring1 + ring2); }`
+    goal: `void main() { vec2 st = vUv - 0.5; float d = length(st); float ring1 = smoothstep(0.5, 0.4, d) - smoothstep(0.3, 0.2, d); float ring2 = smoothstep(0.2, 0.1, d) - smoothstep(0.1, 0.0, d); vec3 col = vec3(1.0, 0.9, 0.0) * (0.7 + 0.3 * sin(u_time * 5.0)); gl_FragColor = vec4(col, (ring1 + ring2) * 0.5); }`
 };
 
 
